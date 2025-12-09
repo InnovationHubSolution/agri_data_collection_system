@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agriculture Data System - Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1b5e20;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #757575;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #616161;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #4caf50;
+        }
+
+        .stat-card.blue {
+            border-left-color: #2196f3;
+        }
+
+        .stat-card.orange {
+            border-left-color: #ff9800;
+        }
+
+        .stat-card.purple {
+            border-left-color: #9c27b0;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1b5e20;
+        }
+
+        .section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            color: #1b5e20;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #1b5e20;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .chart-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .chart {
+            background: #fafafa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .chart-label {
+            width: 120px;
+            font-size: 0.9rem;
+        }
+
+        .chart-bar-fill {
+            flex: 1;
+            height: 24px;
+            background: #4caf50;
+            border-radius: 4px;
+            position: relative;
+            margin: 0 0.5rem;
+        }
+
+        .chart-value {
+            font-weight: 600;
+            min-width: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🌾 Agriculture Data System - Dashboard</h1>
+        <p>Real-time monitoring and management</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <button class="btn btn-primary" onclick="refreshDashboard()">🔄 Refresh Data</button>
+            <button class="btn btn-primary" onclick="exportToExcel()">📊 Export to Excel</button>
+            <button class="btn btn-secondary" onclick="createBackup()">💾 Create Backup</button>
+            <button class="btn btn-secondary" onclick="showUsers()">👥 Manage Users</button>
+            <button class="btn btn-secondary" onclick="viewSyncLogs()">📋 Sync Logs</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Surveys</div>
+                <div class="stat-value" id="totalSurveys">-</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-label">Total Farm Area</div>
+                <div class="stat-value" id="totalArea">-</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-label">Active Enumerators</div>
+                <div class="stat-value" id="activeEnumerators">-</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="totalUsers">-</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📍 Farm Locations Map</h2>
+            <div id="map"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Data Distribution</h2>
+            <div class="chart-container">
+                <div class="chart">
+                    <h3 style="margin-bottom: 1rem; color: #1b5e20;">Crop Distribution</h3>
+                    <div id="cropChart"></div>
+                </div>
+                <div class="chart">
+                    <h3 style="margin-bottom: 1rem; color: #1b5e20;">Island Distribution</h3>
+                    <div id="islandChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🐄 Livestock Totals</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody id="livestockTable">
+                    <tr>
+                        <td colspan="2" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>📝 Recent Surveys</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Farmer</th>
+                        <th>Village</th>
+                        <th>Island</th>
+                        <th>Farm Size</th>
+                        <th>Crops</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recentSurveysTable">
+                    <tr>
+                        <td colspan="6" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>🔄 Recent Sync Activity</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Device</th>
+                        <th>Surveys</th>
+                        <th>Conflicts</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="syncActivityTable">
+                    <tr>
+                        <td colspan="6" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map = null;
+        let markers = [];
+
+        // Initialize map
+        function initMap() {
+            if (map) return;
+
+            map = L.map('map').setView([-15.3767, 166.9592], 8); // Vanuatu center
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('http://localhost:3000/api/dashboard');
+                const data = await response.json();
+
+                // Update stats
+                document.getElementById('totalSurveys').textContent = data.totalSurveys;
+                document.getElementById('totalArea').textContent = data.totalFarmArea + ' ha';
+                document.getElementById('activeEnumerators').textContent = data.activeEnumerators;
+                document.getElementById('totalUsers').textContent = data.totalUsers;
+
+                // Update map
+                updateMap(data.gpsPoints);
+
+                // Update charts
+                updateChart('cropChart', data.cropDistribution);
+                updateChart('islandChart', data.islandDistribution);
+
+                // Update livestock table
+                updateLivestockTable(data.livestockTotals);
+
+                // Update recent surveys
+                updateRecentSurveys(data.recentSurveys);
+
+                // Update sync activity
+                updateSyncActivity(data.recentSyncs);
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                alert('Failed to load dashboard data. Is the server running?');
+            }
+        }
+
+        // Update map with GPS points
+        function updateMap(points) {
+            // Clear existing markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            if (!points || points.length === 0) {
+                return;
+            }
+
+            // Add new markers
+            points.forEach(point => {
+                const marker = L.marker([point.lat, point.lng]).addTo(map);
+                marker.bindPopup(`
+                    <strong>${point.farmerName}</strong><br>
+                    Village: ${point.village || 'N/A'}<br>
+                    Farm Size: ${point.farmSize} ha<br>
+                    Crops: ${point.crops ? point.crops.join(', ') : 'N/A'}
+                `);
+                markers.push(marker);
+            });
+
+            // Fit bounds to show all markers
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Update chart
+        function updateChart(elementId, data) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<p style="color: #999;">No data available</p>';
+                return;
+            }
+
+            const max = Math.max(...Object.values(data));
+
+            Object.entries(data)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .forEach(([label, value]) => {
+                    const width = (value / max) * 100;
+                    container.innerHTML += `
+                        <div class="chart-bar">
+                            <div class="chart-label">${label}</div>
+                            <div class="chart-bar-fill" style="width: ${width}%"></div>
+                            <div class="chart-value">${value}</div>
+                        </div>
+                    `;
+                });
+        }
+
+        // Update livestock table
+        function updateLivestockTable(data) {
+            const tbody = document.getElementById('livestockTable');
+            tbody.innerHTML = `
+                <tr><td>Cattle</td><td>${data.cattle}</td></tr>
+                <tr><td>Pigs</td><td>${data.pigs}</td></tr>
+                <tr><td>Poultry</td><td>${data.poultry}</td></tr>
+                <tr><td>Goats</td><td>${data.goats}</td></tr>
+            `;
+        }
+
+        // Update recent surveys
+        function updateRecentSurveys(surveys) {
+            const tbody = document.getElementById('recentSurveysTable');
+
+            if (!surveys || surveys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No surveys yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = surveys.map(s => `
+                <tr>
+                    <td>${s.farmerName}</td>
+                    <td>${s.village || '-'}</td>
+                    <td>${s.island || '-'}</td>
+                    <td>${s.farmSize} ha</td>
+                    <td>${s.crops ? s.crops.join(', ') : '-'}</td>
+                    <td>${new Date(s.serverTimestamp || s.timestamp).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Update sync activity
+        function updateSyncActivity(syncs) {
+            const tbody = document.getElementById('syncActivityTable');
+
+            if (!syncs || syncs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No sync activity yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = syncs.map(s => `
+                <tr>
+                    <td>${new Date(s.timestamp).toLocaleString()}</td>
+                    <td>${s.userId || '-'}</td>
+                    <td>${s.deviceId || '-'}</td>
+                    <td>${s.surveyCount || 0}</td>
+                    <td>${s.conflictCount || 0}</td>
+                    <td><span class="badge ${s.success ? 'badge-success' : 'badge-error'}">${s.success ? 'Success' : 'Failed'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Refresh dashboard
+        function refreshDashboard() {
+            loadDashboard();
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            window.open('http://localhost:3000/api/export/csv', '_blank');
+        }
+
+        // Create backup
+        async function createBackup() {
+            if (!confirm('Create a backup of all data?')) return;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/backup', { method: 'POST' });
+                const data = await response.json();
+                alert(data.message + '\nRecords: ' + data.recordCount);
+            } catch (error) {
+                alert('Failed to create backup');
+            }
+        }
+
+        // Show users (placeholder)
+        function showUsers() {
+            alert('User management UI - Coming soon!\n\nUse API endpoints:\nGET /api/users\nPOST /api/users\nPUT /api/users/:id\nDELETE /api/users/:id');
+        }
+
+        // View sync logs (placeholder)
+        function viewSyncLogs() {
+            window.open('http://localhost:3000/api/sync-logs', '_blank');
+        }
+
+        // Initialize
+        initMap();
+        loadDashboard();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+
+</html>

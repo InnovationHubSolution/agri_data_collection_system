@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Agriculture Data System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2e7d32">
+</head>
+
+<body>
+    <div id="app">
+        <header>
+            <h1>🌾 Agriculture Data System</h1>
+            <div class="header-actions">
+                <span id="onlineStatus" class="status-badge offline">Offline</span>
+                <button id="syncBtn" class="btn-primary" disabled>Sync Data</button>
+            </div>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="form">New Survey</button>
+            <button class="tab-btn" data-tab="records">Records (<span id="recordCount">0</span>)</button>
+            <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+        </nav>
+
+        <main>
+            <!-- Survey Form Tab -->
+            <section id="formTab" class="tab-content active">
+                <div class="form-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0% Complete</div>
+                </div>
+                <form id="farmSurveyForm">
+                    <div class="form-section">
+                        <h2>👨‍🌾 Farmer Information</h2>
+                        <div class="form-group">
+                            <label for="farmerName" class="required-field">Farmer Name</label>
+                            <input type="text" id="farmerName" required minlength="2" data-validate="required">
+                            <div class="field-error" id="farmerName-error">Please enter farmer's name (at least 2
+                                characters)</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="householdSize">Household Size</label>
+                            <input type="number" id="householdSize" min="1" max="50" data-validate="range">
+                            <div class="field-error" id="householdSize-error">Enter a value between 1 and 50</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" id="phoneNumber" pattern="[0-9+\-\s()]*" placeholder="e.g., +678 5551234">
+                            <div class="field-error" id="phoneNumber-error">Enter a valid phone number</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="village" class="required-field">Village/Community</label>
+                            <input type="text" id="village" required data-validate="required">
+                            <div class="field-error" id="village-error">Village is required</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="island">Island</label>
+                            <select id="island">
+                                <option value="">Select Island</option>
+                                <option value="efate">Efate</option>
+                                <option value="espiritu-santo">Espiritu Santo</option>
+                                <option value="malekula">Malekula</option>
+                                <option value="tanna">Tanna</option>
+                                <option value="pentecost">Pentecost</option>
+                                <option value="ambrym">Ambrym</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>📍 Farm Location</h2>
+                        <div class="form-group">
+                            <button type="button" id="getGPSBtn" class="btn-secondary">📍 Get Current GPS
+                                Location</button>
+                            <div id="gpsStatus"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="latitude">Latitude</label>
+                                <input type="number" id="latitude" step="any">
+                            </div>
+                            <div class="form-group">
+                                <label for="longitude">Longitude</label>
+                                <input type="number" id="longitude" step="any">
+                            </div>
+                        </div>
+                        <div id="map" style="height: 300px; margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>🌱 Crop Information</h2>
+                        <div class="form-group">
+                            <label for="farmSize" class="required-field">Farm Size (hectares)</label>
+                            <input type="number" id="farmSize" step="0.01" min="0.01" max="10000" required
+                                data-validate="required">
+                            <div class="field-error" id="farmSize-error">Enter farm size (0.01 - 10000 ha)</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Crop Types (select all that apply)</label>
+                            <div class="checkbox-grid">
+                                <label><input type="checkbox" name="crops" value="copra"> Copra (Coconut)</label>
+                                <label><input type="checkbox" name="crops" value="kava"> Kava</label>
+                                <label><input type="checkbox" name="crops" value="cocoa"> Cocoa</label>
+                                <label><input type="checkbox" name="crops" value="taro"> Taro</label>
+                                <label><input type="checkbox" name="crops" value="yam"> Yam</label>
+                                <label><input type="checkbox" name="crops" value="cassava"> Cassava</label>
+                                <label><input type="checkbox" name="crops" value="banana"> Banana</label>
+                                <label><input type="checkbox" name="crops" value="vegetables"> Vegetables</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="otherCrops">Other Crops</label>
+                            <input type="text" id="otherCrops" placeholder="Specify other crops">
+                        </div>
+                        <div class="form-group">
+                            <label for="productionQty">Estimated Annual Production (kg)</label>
+                            <input type="number" id="productionQty" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastHarvest">Last Harvest Date</label>
+                            <input type="date" id="lastHarvest">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>🐄 Livestock Information</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cattle">Cattle</label>
+                                <input type="number" id="cattle" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="pigs">Pigs</label>
+                                <input type="number" id="pigs" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="poultry">Poultry</label>
+                                <input type="number" id="poultry" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="goats">Goats</label>
+                                <input type="number" id="goats" min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>🐛 Pests & Diseases</h2>
+                        <div class="form-group">
+                            <label for="pestIssues">Any Pest or Disease Issues?</label>
+                            <select id="pestIssues" data-skip-logic="true">
+                                <option value="none">No Issues</option>
+                                <option value="pests">Pest Infestation</option>
+                                <option value="disease">Disease Outbreak</option>
+                                <option value="both">Both Pests and Disease</option>
+                            </select>
+                        </div>
+                        <div class="form-group hidden conditional-section" id="pestDetailsGroup"
+                            data-show-when="pestIssues" data-show-values="pests,disease,both">
+                            <label for="pestDetails" class="required-field">Details (Required when issues
+                                present)</label>
+                            <textarea id="pestDetails" rows="3" placeholder="Describe pest or disease issues..."
+                                minlength="10" data-validate="conditional"></textarea>
+                            <div class="field-error" id="pestDetails-error">Please describe the pest/disease issues (min
+                                10 characters)</div>
+                        </div>
+                        <div class="form-group hidden conditional-section" id="pestSeverityGroup"
+                            data-show-when="pestIssues" data-show-values="pests,disease,both">
+                            <label for="pestSeverity">Severity Level</label>
+                            <select id="pestSeverity">
+                                <option value="">Select severity</option>
+                                <option value="low">Low - Minor damage</option>
+                                <option value="medium">Medium - Noticeable damage</option>
+                                <option value="high">High - Significant damage</option>
+                                <option value="severe">Severe - Crop failure risk</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>📷 Photos</h2>
+                        <div class="form-group">
+                            <label for="cropPhotos">Crop/Farm Photos</label>
+                            <button type="button" id="takePictureBtn" class="btn-secondary camera-btn">
+                                📷 Take Picture
+                            </button>
+                            <input type="file" id="cropPhotos" accept="image/*" multiple capture="environment"
+                                style="display: none;">
+                            <div id="photoPreview" class="photo-preview"></div>
+                            <p style="font-size: 0.875rem; color: #666; margin-top: 0.5rem;">Recommended: Take 2-3 clear
+                                photos of crops</p>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2>📝 Additional Notes</h2>
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" rows="4"
+                                placeholder="Any additional observations or comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Survey</button>
+                        <button type="reset" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Records Tab -->
+            <section id="recordsTab" class="tab-content">
+                <div class="records-header">
+                    <h2>Saved Records</h2>
+                    <button id="exportBtn" class="btn-secondary">Export CSV</button>
+                </div>
+                <div id="recordsList" class="records-list"></div>
+            </section>
+
+            <!-- Dashboard Tab -->
+            <section id="dashboardTab" class="tab-content">
+                <h2>Dashboard</h2>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <h3>Total Surveys</h3>
+                        <p class="stat-value" id="totalSurveys">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Farm Area</h3>
+                        <p class="stat-value" id="totalArea">0 ha</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Sync</h3>
+                        <p class="stat-value" id="pendingSync">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Most Common Crop</h3>
+                        <p class="stat-value" id="commonCrop">-</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script type="module" src="/main.js"></script>
+</body>
+
+</html>
