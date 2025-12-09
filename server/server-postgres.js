@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const {
     initializeDatabase,
@@ -11,19 +13,73 @@ const {
 } = require('./database');
 const {
     hashPassword,
-    generateToken,
+    comparePassword,
+    generateTokenPair,
+    refreshAccessToken,
     authenticate,
     authorize,
     optionalAuth
 } = require('./auth');
+const {
+    validate,
+    userValidation,
+    surveyValidation,
+    paginationValidation,
+    sanitizeBody
+} = require('./validation');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false
+}));
+
+// CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',')
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('CORS policy violation'), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Body parsing with sanitization
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(sanitizeBody);
+
+// HTTPS redirect in production
+if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true') {
+    app.use((req, res, next) => {
+        if (req.header('x-forwarded-proto') !== 'https') {
+            res.redirect(`https://${req.header('host')}${req.url}`);
+        } else {
+            next();
+        }
+    });
+}
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '..')));
@@ -43,13 +99,9 @@ app.get('/api/health', async (req, res) => {
 // ==================== AUTH ENDPOINTS ====================
 
 // Login
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', userValidation.login, validate, async (req, res) => {
     try {
         const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Username and password required' });
-        }
 
         const user = await userOperations.getByUsername(username);
 
@@ -57,19 +109,23 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hashedPassword = hashPassword(password);
-        if (user.password !== hashedPassword) {
+        // Use bcrypt to compare passwords
+        const isValid = await comparePassword(password, user.password);
+        if (!isValid) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // Update last login
         await userOperations.updateLastLogin(user.id);
 
-        const token = generateToken(user);
+        // Generate access and refresh tokens
+        const tokens = generateTokenPair(user);
 
         res.json({
             success: true,
-            token,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresIn: tokens.expiresIn,
             user: {
                 id: user.id,
                 username: user.username,
@@ -82,6 +138,32 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Refresh token endpoint
+app.post('/api/auth/refresh', async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(400).json({ error: 'Refresh token required' });
+        }
+
+        const newAccessToken = refreshAccessToken(refreshToken);
+
+        if (!newAccessToken) {
+            return res.status(401).json({ error: 'Invalid or expired refresh token' });
+        }
+
+        res.json({
+            success: true,
+            accessToken: newAccessToken
+        });
+
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(500).json({ error: 'Token refresh failed' });
     }
 });
 
@@ -99,19 +181,22 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Current and new password required' });
         }
 
-        if (newPassword.length < 6) {
-            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'New password must be at least 8 characters' });
         }
 
         const user = await userOperations.getById(req.user.id);
-        const hashedCurrent = hashPassword(currentPassword);
-
-        if (user.password !== hashedCurrent) {
+        
+        // Use bcrypt to compare current password
+        const isValid = await comparePassword(currentPassword, user.password);
+        if (!isValid) {
             return res.status(401).json({ error: 'Current password incorrect' });
         }
 
+        // Hash new password with bcrypt
+        const hashedPassword = await hashPassword(newPassword);
         await userOperations.update(req.user.id, {
-            password: hashPassword(newPassword)
+            password: hashedPassword
         });
 
         res.json({ success: true, message: 'Password changed successfully' });
@@ -288,13 +373,9 @@ app.get('/api/users', authenticate, authorize('admin', 'supervisor'), async (req
 });
 
 // Create user (admin only)
-app.post('/api/users', authenticate, authorize('admin'), async (req, res) => {
+app.post('/api/users', authenticate, authorize('admin'), userValidation.create, validate, async (req, res) => {
     try {
         const { username, password, role, fullName, email, phone } = req.body;
-
-        if (!username || !password || !role) {
-            return res.status(400).json({ error: 'Username, password, and role required' });
-        }
 
         // Check if username exists
         const existing = await userOperations.getByUsername(username);
@@ -302,10 +383,13 @@ app.post('/api/users', authenticate, authorize('admin'), async (req, res) => {
             return res.status(400).json({ error: 'Username already exists' });
         }
 
+        // Hash password with bcrypt
+        const hashedPassword = await hashPassword(password);
+
         const newUser = await userOperations.create({
             id: `user-${Date.now()}`,
             username,
-            password: hashPassword(password),
+            password: hashedPassword,
             role,
             fullName,
             email,
@@ -330,7 +414,7 @@ app.post('/api/users', authenticate, authorize('admin'), async (req, res) => {
 });
 
 // Update user (admin only)
-app.put('/api/users/:id', authenticate, authorize('admin'), async (req, res) => {
+app.put('/api/users/:id', authenticate, authorize('admin'), userValidation.update, validate, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = {};
@@ -340,7 +424,11 @@ app.put('/api/users/:id', authenticate, authorize('admin'), async (req, res) => 
         if (req.body.phone) updates.phone = req.body.phone;
         if (req.body.role) updates.role = req.body.role;
         if (req.body.active !== undefined) updates.active = req.body.active;
-        if (req.body.password) updates.password = hashPassword(req.body.password);
+        
+        // Hash password with bcrypt if being updated
+        if (req.body.password) {
+            updates.password = await hashPassword(req.body.password);
+        }
 
         const updated = await userOperations.update(id, updates);
 
@@ -443,17 +531,21 @@ async function startServer() {
         // Create default admin if none exists
         const users = await userOperations.getAll();
         if (users.length === 0) {
+            const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123456';
+            const hashedPassword = await hashPassword(defaultPassword);
+            
             await userOperations.create({
                 id: 'admin-001',
-                username: 'admin',
-                password: hashPassword('admin123'),
+                username: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
+                password: hashedPassword,
                 role: 'admin',
                 fullName: 'System Administrator',
-                email: 'admin@example.com',
+                email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@example.com',
                 phone: null,
                 active: true
             });
-            console.log('✅ Created default admin user (username: admin, password: admin123)');
+            console.log(`✅ Created default admin user (username: ${process.env.DEFAULT_ADMIN_USERNAME || 'admin'}, password: ${defaultPassword})');
+            console.log('⚠️  CHANGE DEFAULT PASSWORD IMMEDIATELY!');
         }
 
         app.listen(PORT, () => {
@@ -482,8 +574,15 @@ async function startServer() {
             console.log('     GET    /api/sync-logs');
             console.log('   System:');
             console.log('     GET    /api/health');
-            console.log('\n⚠️  Default Credentials: admin / admin123 (CHANGE IN PRODUCTION!)');
-            console.log('🔐 JWT Authentication enabled on protected endpoints\n');
+            console.log('\n🔒 Security Features Enabled:');
+            console.log('   ✓ bcrypt password hashing (cost factor: 12)');
+            console.log('   ✓ JWT access + refresh tokens');
+            console.log('   ✓ Input validation & sanitization');
+            console.log('   ✓ Helmet security headers');
+            console.log('   ✓ CORS protection');
+            console.log('   ✓ HTTPS redirect (production only)');
+            console.log('\n⚠️  Default Credentials: admin / admin123 (CHANGE IMMEDIATELY!)');
+            console.log('💡 Configure .env file for production settings\n');
         });
 
     } catch (error) {
