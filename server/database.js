@@ -173,6 +173,75 @@ async function initializeDatabase() {
             ON CONFLICT (id) DO NOTHING;
         `);
 
+        // Create export_jobs table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS export_jobs (
+                id SERIAL PRIMARY KEY,
+                questionnaire_id INTEGER REFERENCES form_templates(id),
+                questionnaire_title VARCHAR(255) NOT NULL,
+                version VARCHAR(50) NOT NULL,
+                status_filter VARCHAR(50),
+                date_range VARCHAR(100) DEFAULT 'All time',
+                status VARCHAR(20) DEFAULT 'queued' CHECK (status IN ('queued', 'processing', 'completed', 'failed')),
+                file_path TEXT,
+                file_size BIGINT,
+                processing_time VARCHAR(50),
+                error_message TEXT,
+                created_by VARCHAR(50) REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP
+            );
+        `);
+
+        // Add indexes for export_jobs
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_export_jobs_created_by ON export_jobs(created_by);
+            CREATE INDEX IF NOT EXISTS idx_export_jobs_status ON export_jobs(status);
+            CREATE INDEX IF NOT EXISTS idx_export_jobs_created_at ON export_jobs(created_at);
+        `);
+
+        // Create workspaces table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS workspaces (
+                name VARCHAR(50) PRIMARY KEY,
+                display_name VARCHAR(200) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT workspace_name_format CHECK (name ~ '^[a-z0-9_-]+$')
+            );
+        `);
+
+        // Add indexes for workspaces
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_workspaces_created_at ON workspaces(created_at);
+        `);
+
+        // Insert default primary workspace
+        await client.query(`
+            INSERT INTO workspaces (name, display_name)
+            VALUES ('primary', 'Default Workspace')
+            ON CONFLICT (name) DO NOTHING;
+        `);
+
+        // Add workspace_name column to form_templates if not exists
+        await client.query(`
+            ALTER TABLE form_templates
+            ADD COLUMN IF NOT EXISTS workspace_name VARCHAR(50) REFERENCES workspaces(name) DEFAULT 'primary';
+        `);
+
+        // Add workspace_name column to surveys if not exists
+        await client.query(`
+            ALTER TABLE surveys
+            ADD COLUMN IF NOT EXISTS workspace_name VARCHAR(50) REFERENCES workspaces(name) DEFAULT 'primary';
+        `);
+
+        // Add indexes for workspace filtering
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_form_templates_workspace ON form_templates(workspace_name);
+            CREATE INDEX IF NOT EXISTS idx_surveys_workspace ON surveys(workspace_name);
+        `);
+
         // Create updated_at trigger function
         await client.query(`
             CREATE OR REPLACE FUNCTION update_updated_at_column()

@@ -31,6 +31,46 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Background export processing function
+async function processExport(exportId) {
+    const { pool } = require('./database');
+    
+    try {
+        // Update status to processing
+        await pool.query(
+            'UPDATE export_jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            ['processing', exportId]
+        );
+
+        // Simulate processing time (in real app, generate actual CSV/JSON and create ZIP)
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Calculate file size (mock data, in real app would be actual file size)
+        const fileSize = Math.floor(Math.random() * 5000000) + 100000; // 100KB - 5MB
+
+        // Update status to completed
+        await pool.query(`
+            UPDATE export_jobs 
+            SET status = $1, 
+                file_size = $2,
+                processing_time = $3,
+                updated_at = CURRENT_TIMESTAMP,
+                completed_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+        `, ['completed', fileSize, 'a few seconds', exportId]);
+
+        console.log(`Export ${exportId} completed successfully`);
+    } catch (error) {
+        console.error(`Export ${exportId} failed:`, error);
+        
+        // Update status to failed
+        await pool.query(
+            'UPDATE export_jobs SET status = $1, error_message = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+            ['failed', error.message, exportId]
+        );
+    }
+}
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -1095,6 +1135,325 @@ app.get('/api/export/geojson', authenticate, async (req, res) => {
     }
 });
 
+// Generate data export
+app.post('/api/export/generate', authenticate, async (req, res) => {
+    try {
+        const { questionnaireId, version, status, dateRange } = req.body;
+        const userId = req.user.userId;
+
+        // Get questionnaire title
+        const formResult = await pool.query('SELECT title FROM form_templates WHERE id = $1', [questionnaireId]);
+        const questionnaireTitle = formResult.rows[0]?.title || 'Unknown Survey';
+
+        // Create export job
+        const result = await pool.query(`
+            INSERT INTO export_jobs (
+                questionnaire_id, questionnaire_title, version, 
+                status_filter, date_range, created_by, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'queued')
+            RETURNING *
+        `, [questionnaireId, questionnaireTitle, version, status, dateRange, userId]);
+
+        const exportJob = result.rows[0];
+
+        // Start processing in background (in real app, use job queue like Bull or RabbitMQ)
+        processExport(exportJob.id);
+
+        res.json({
+            success: true,
+            exportId: exportJob.id,
+            message: 'Export job created successfully'
+        });
+    } catch (error) {
+        console.error('Generate export error:', error);
+        res.status(500).json({ error: 'Failed to generate export' });
+    }
+});
+
+// Get export history
+app.get('/api/export/history', authenticate, async (req, res) => {
+    try {
+        const role = req.user.role;
+        const userId = req.user.userId;
+
+        let query = `
+            SELECT * FROM export_jobs
+        `;
+
+        // Filter by user for non-admins
+        if (role !== 'admin') {
+            query += ` WHERE created_by = $1`;
+        }
+
+        query += ` ORDER BY created_at DESC LIMIT 50`;
+
+        const result = role === 'admin' 
+            ? await pool.query(query)
+            : await pool.query(query, [userId]);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get export history error:', error);
+        res.status(500).json({ error: 'Failed to fetch export history' });
+    }
+});
+
+// Download export file
+app.get('/api/export/download/:id', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+        const role = req.user.role;
+
+        // Get export job
+        const result = await pool.query('SELECT * FROM export_jobs WHERE id = $1', [id]);
+        const exportJob = result.rows[0];
+
+        if (!exportJob) {
+            return res.status(404).json({ error: 'Export not found' });
+        }
+
+        // Check permissions
+        if (role !== 'admin' && exportJob.created_by !== userId) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        if (exportJob.status !== 'completed') {
+            return res.status(400).json({ error: 'Export is not ready yet' });
+        }
+
+        // In a real system, you would read the actual file from disk
+        // For now, generate CSV data on the fly
+        const { questionnaireId, statusFilter } = exportJob;
+        
+        let query = `
+            SELECT s.*, u.username as enumerator, ft.title as questionnaire
+            FROM surveys s
+            LEFT JOIN users u ON s.user_id = u.username
+            LEFT JOIN form_templates ft ON s.form_template_id = ft.id
+            WHERE 1=1
+        `;
+
+        const params = [];
+        let paramIndex = 1;
+
+        if (questionnaireId) {
+            query += ` AND s.form_template_id = $${paramIndex++}`;
+            params.push(questionnaireId);
+        }
+
+        if (statusFilter) {
+            query += ` AND s.status = $${paramIndex++}`;
+            params.push(statusFilter);
+        }
+
+        const surveyResult = await pool.query(query, params);
+        
+        // Generate CSV
+        const csvRows = [
+            ['ID', 'Interview Key', 'Farmer Name', 'Household Size', 'Phone', 'Village', 'Island',
+                'Latitude', 'Longitude', 'GPS Accuracy', 'Farm Size', 'Crops', 
+                'Pest Issues', 'Status', 'Created At', 'Enumerator', 'Questionnaire']
+        ];
+
+        surveyResult.rows.forEach((s, index) => {
+            const interviewKey = `${new Date(s.created_at).getFullYear()}-${String(new Date(s.created_at).getMonth() + 1).padStart(2, '0')}-${String(s.id).padStart(6, '0')}`;
+            const crops = typeof s.crops === 'string' ? s.crops : JSON.stringify(s.crops);
+            
+            csvRows.push([
+                s.id,
+                interviewKey,
+                s.farmer_name || '',
+                s.household_size || '',
+                s.phone || '',
+                s.village || '',
+                s.island || '',
+                s.latitude || '',
+                s.longitude || '',
+                s.gps_accuracy || '',
+                s.farm_size || '',
+                crops,
+                s.pest_issues ? 'Yes' : 'No',
+                s.status || 'interviewer_assigned',
+                s.created_at,
+                s.enumerator || '',
+                s.questionnaire || ''
+            ]);
+        });
+
+        const csv = csvRows.map(row =>
+            row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="export_${id}_${exportJob.questionnaire_title.replace(/\s+/g, '_')}.csv"`);
+        res.send(csv);
+    } catch (error) {
+        console.error('Download export error:', error);
+        res.status(500).json({ error: 'Download failed' });
+    }
+});
+
+// ==================== WORKSPACES ENDPOINTS ====================
+
+// Get all workspaces
+app.get('/api/workspaces', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT name, display_name, created_at, updated_at
+            FROM workspaces
+            ORDER BY created_at DESC
+        `);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get workspaces error:', error);
+        res.status(500).json({ error: 'Failed to fetch workspaces' });
+    }
+});
+
+// Get single workspace
+app.get('/api/workspaces/:name', authenticate, async (req, res) => {
+    try {
+        const { name } = req.params;
+
+        const result = await pool.query(
+            'SELECT name, display_name, created_at, updated_at FROM workspaces WHERE name = $1',
+            [name]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Workspace not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get workspace error:', error);
+        res.status(500).json({ error: 'Failed to fetch workspace' });
+    }
+});
+
+// Create new workspace
+app.post('/api/workspaces', authenticate, authorize(['admin']), async (req, res) => {
+    try {
+        const { name, display_name } = req.body;
+
+        // Validate name format
+        if (!/^[a-z0-9_-]{3,50}$/.test(name)) {
+            return res.status(400).json({ 
+                error: 'Invalid workspace name. Must be 3-50 characters, lowercase letters, numbers, underscores, or hyphens only' 
+            });
+        }
+
+        // Validate display name
+        if (!display_name || display_name.trim().length === 0 || display_name.length > 200) {
+            return res.status(400).json({ 
+                error: 'Display name is required and must be 200 characters or less' 
+            });
+        }
+
+        // Check if workspace already exists
+        const existing = await pool.query('SELECT name FROM workspaces WHERE name = $1', [name]);
+        if (existing.rows.length > 0) {
+            return res.status(409).json({ error: 'A workspace with this name already exists' });
+        }
+
+        // Create workspace
+        const result = await pool.query(`
+            INSERT INTO workspaces (name, display_name)
+            VALUES ($1, $2)
+            RETURNING *
+        `, [name, display_name.trim()]);
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Create workspace error:', error);
+        res.status(500).json({ error: 'Failed to create workspace' });
+    }
+});
+
+// Update workspace
+app.put('/api/workspaces/:name', authenticate, authorize(['admin']), async (req, res) => {
+    try {
+        const { name } = req.params;
+        const { display_name } = req.body;
+
+        // Validate display name
+        if (!display_name || display_name.trim().length === 0 || display_name.length > 200) {
+            return res.status(400).json({ 
+                error: 'Display name is required and must be 200 characters or less' 
+            });
+        }
+
+        // Update workspace
+        const result = await pool.query(`
+            UPDATE workspaces
+            SET display_name = $1, updated_at = CURRENT_TIMESTAMP
+            WHERE name = $2
+            RETURNING *
+        `, [display_name.trim(), name]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Workspace not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update workspace error:', error);
+        res.status(500).json({ error: 'Failed to update workspace' });
+    }
+});
+
+// Delete workspace
+app.delete('/api/workspaces/:name', authenticate, authorize(['admin']), async (req, res) => {
+    try {
+        const { name } = req.params;
+
+        // Prevent deleting primary workspace
+        if (name === 'primary') {
+            return res.status(400).json({ error: 'Cannot delete the primary workspace' });
+        }
+
+        // Check if workspace exists
+        const existing = await pool.query('SELECT name FROM workspaces WHERE name = $1', [name]);
+        if (existing.rows.length === 0) {
+            return res.status(404).json({ error: 'Workspace not found' });
+        }
+
+        // Check if workspace has questionnaires
+        const questionnaires = await pool.query(
+            'SELECT COUNT(*) FROM form_templates WHERE workspace_name = $1',
+            [name]
+        );
+
+        if (parseInt(questionnaires.rows[0].count) > 0) {
+            return res.status(400).json({ 
+                error: 'Cannot delete workspace with existing questionnaires. Please delete all questionnaires first.' 
+            });
+        }
+
+        // Check if workspace has surveys
+        const surveys = await pool.query(
+            'SELECT COUNT(*) FROM surveys WHERE workspace_name = $1',
+            [name]
+        );
+
+        if (parseInt(surveys.rows[0].count) > 0) {
+            return res.status(400).json({ 
+                error: 'Cannot delete workspace with existing surveys. Please delete all surveys first.' 
+            });
+        }
+
+        // Delete workspace
+        await pool.query('DELETE FROM workspaces WHERE name = $1', [name]);
+
+        res.json({ success: true, message: 'Workspace deleted successfully' });
+    } catch (error) {
+        console.error('Delete workspace error:', error);
+        res.status(500).json({ error: 'Failed to delete workspace' });
+    }
+});
+
 // ==================== SETTINGS ENDPOINTS ====================
 
 // Get all settings
@@ -1281,6 +1640,12 @@ async function startServer() {
             console.log('     POST   /api/users');
             console.log('     PUT    /api/users/:id');
             console.log('     DELETE /api/users/:id');
+            console.log('   Workspaces:');
+            console.log('     GET    /api/workspaces');
+            console.log('     GET    /api/workspaces/:name');
+            console.log('     POST   /api/workspaces');
+            console.log('     PUT    /api/workspaces/:name');
+            console.log('     DELETE /api/workspaces/:name');
             console.log('   Settings:');
             console.log('     GET    /api/settings');
             console.log('     POST   /api/settings/global-note');
@@ -1294,6 +1659,9 @@ async function startServer() {
             console.log('     GET    /api/export/users');
             console.log('     GET    /api/export/forms');
             console.log('     GET    /api/export/geojson');
+            console.log('     POST   /api/export/generate');
+            console.log('     GET    /api/export/history');
+            console.log('     GET    /api/export/download/:id');
             console.log('     GET    /api/sync-logs');
             console.log('   System:');
             console.log('     GET    /api/health');
