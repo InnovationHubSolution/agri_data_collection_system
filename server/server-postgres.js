@@ -242,6 +242,136 @@ app.get('/api/forms/published/list', optionalAuth, async (req, res) => {
     }
 });
 
+// ==================== REPORTS ENDPOINTS ====================
+
+// Get surveys and statuses report
+app.get('/api/reports/surveys-statuses', authenticate, async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        
+        // Get survey statistics grouped by form template or default
+        const surveysResult = await pool.query(`
+            SELECT 
+                COALESCE(ft.id::text, 'default') as survey_id,
+                COALESCE(ft.title, 'Default Farm Survey') as questionnaire_title,
+                COUNT(CASE WHEN s.status = 'supervisor_assigned' THEN 1 END) as supervisor_assigned,
+                COUNT(CASE WHEN s.status = 'interviewer_assigned' THEN 1 END) as interviewer_assigned,
+                COUNT(CASE WHEN s.status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN s.status = 'rejected_supervisor' THEN 1 END) as rejected_supervisor,
+                COUNT(CASE WHEN s.status = 'approved_supervisor' THEN 1 END) as approved_supervisor,
+                COUNT(CASE WHEN s.status = 'rejected_hq' THEN 1 END) as rejected_hq,
+                COUNT(CASE WHEN s.status = 'approved_hq' THEN 1 END) as approved_hq,
+                COUNT(*) as total
+            FROM surveys s
+            LEFT JOIN form_templates ft ON s.form_template_id = ft.id
+            GROUP BY ft.id, ft.title
+            ORDER BY questionnaire_title
+        `);
+        
+        // Get list of supervisors
+        const supervisorsResult = await pool.query(`
+            SELECT id, username, full_name
+            FROM users
+            WHERE role = 'supervisor'
+            ORDER BY full_name, username
+        `);
+        
+        // Get list of survey templates
+        const templatesResult = await pool.query(`
+            SELECT id, title
+            FROM form_templates
+            WHERE published = true
+            ORDER BY title
+        `);
+        
+        res.json({
+            surveys: surveysResult.rows,
+            supervisors: supervisorsResult.rows.map(s => ({
+                id: s.id,
+                name: s.full_name || s.username,
+                username: s.username
+            })),
+            surveyTemplates: templatesResult.rows
+        });
+    } catch (error) {
+        console.error('Error fetching surveys-statuses report:', error);
+        res.status(500).json({ error: 'Failed to fetch report data' });
+    }
+});
+
+// Export surveys and statuses report
+app.get('/api/reports/surveys-statuses/export', authenticate, async (req, res) => {
+    try {
+        const { format, supervisor, survey } = req.query;
+        const { pool } = require('./database');
+        
+        // Build query with filters
+        let query = `
+            SELECT 
+                COALESCE(ft.title, 'Default Farm Survey') as questionnaire_title,
+                COUNT(CASE WHEN s.status = 'supervisor_assigned' THEN 1 END) as supervisor_assigned,
+                COUNT(CASE WHEN s.status = 'interviewer_assigned' THEN 1 END) as interviewer_assigned,
+                COUNT(CASE WHEN s.status = 'completed' THEN 1 END) as completed,
+                COUNT(CASE WHEN s.status = 'rejected_supervisor' THEN 1 END) as rejected_supervisor,
+                COUNT(CASE WHEN s.status = 'approved_supervisor' THEN 1 END) as approved_supervisor,
+                COUNT(CASE WHEN s.status = 'rejected_hq' THEN 1 END) as rejected_hq,
+                COUNT(CASE WHEN s.status = 'approved_hq' THEN 1 END) as approved_hq,
+                COUNT(*) as total
+            FROM surveys s
+            LEFT JOIN form_templates ft ON s.form_template_id = ft.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        if (supervisor) {
+            params.push(supervisor);
+            query += ` AND s.user_id IN (SELECT id FROM users WHERE role = 'enumerator' AND supervisor_id = $${params.length})`;
+        }
+        if (survey) {
+            params.push(survey);
+            query += ` AND s.form_template_id = $${params.length}`;
+        }
+        
+        query += ' GROUP BY ft.title ORDER BY questionnaire_title';
+        
+        const result = await pool.query(query, params);
+        
+        // Generate export based on format
+        if (format === 'csv' || format === 'tab') {
+            const delimiter = format === 'csv' ? ',' : '\t';
+            const headers = ['Questionnaire Title', 'Supervisor Assigned', 'Interviewer Assigned', 'Completed', 
+                           'Rejected by Supervisor', 'Approved by Supervisor', 'Rejected by HQ', 'Approved by HQ', 'Total'];
+            
+            let content = headers.join(delimiter) + '\n';
+            result.rows.forEach(row => {
+                content += [
+                    row.questionnaire_title,
+                    row.supervisor_assigned,
+                    row.interviewer_assigned,
+                    row.completed,
+                    row.rejected_supervisor,
+                    row.approved_supervisor,
+                    row.rejected_hq,
+                    row.approved_hq,
+                    row.total
+                ].join(delimiter) + '\n';
+            });
+            
+            res.setHeader('Content-Type', `text/${format === 'csv' ? 'csv' : 'tab-separated-values'}`);
+            res.setHeader('Content-Disposition', `attachment; filename=surveys-statuses.${format === 'csv' ? 'csv' : 'txt'}`);
+            res.send(content);
+        } else if (format === 'xlsx') {
+            // For now, return CSV format - will add XLSX library later
+            res.status(501).json({ error: 'XLSX export not yet implemented. Please use CSV or TAB format.' });
+        } else {
+            res.status(400).json({ error: 'Invalid export format' });
+        }
+    } catch (error) {
+        console.error('Error exporting report:', error);
+        res.status(500).json({ error: 'Failed to export report' });
+    }
+});
+
 // ==================== AUTH ENDPOINTS ====================
 
 // Login
@@ -717,6 +847,9 @@ async function startServer() {
             console.log('     DELETE /api/forms/:id');
             console.log('     POST   /api/forms/:id/publish');
             console.log('     GET    /api/forms/published/list');
+            console.log('   Reports:');
+            console.log('     GET    /api/reports/surveys-statuses');
+            console.log('     GET    /api/reports/surveys-statuses/export');
             console.log('   Dashboard:');
             console.log('     GET    /api/dashboard');
             console.log('   User Management:');

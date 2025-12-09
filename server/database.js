@@ -71,6 +71,19 @@ async function initializeDatabase() {
                 client_id VARCHAR(100),
                 device_id VARCHAR(100),
                 user_id VARCHAR(50) REFERENCES users(id),
+                form_template_id INTEGER REFERENCES form_templates(id),
+                status VARCHAR(50) DEFAULT 'interviewer_assigned' CHECK (status IN (
+                    'supervisor_assigned',
+                    'interviewer_assigned',
+                    'completed',
+                    'rejected_supervisor',
+                    'approved_supervisor',
+                    'rejected_hq',
+                    'approved_hq'
+                )),
+                rejection_reason TEXT,
+                approved_by VARCHAR(50),
+                approved_at TIMESTAMP,
                 farmer_name VARCHAR(200) NOT NULL,
                 household_size INTEGER,
                 phone VARCHAR(50),
@@ -110,6 +123,8 @@ async function initializeDatabase() {
             CREATE INDEX IF NOT EXISTS idx_surveys_user_id ON surveys(user_id);
             CREATE INDEX IF NOT EXISTS idx_surveys_created_at ON surveys(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_surveys_farmer_name ON surveys(farmer_name);
+            CREATE INDEX IF NOT EXISTS idx_surveys_status ON surveys(status);
+            CREATE INDEX IF NOT EXISTS idx_surveys_form_template ON surveys(form_template_id);
         `);
 
         // Photos table
