@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Duration - Agriculture Data System</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <h2>🌾 Agriculture Data System</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="workspaces.html">Workspaces</a>
+            <div class="nav-item">
+                <a href="reports.html" class="active">Reports <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-menu">
+                    <a href="reports.html">Surveys and Statuses</a>
+                    <a href="reports-teams.html">Teams and Statuses</a>
+                    <a href="reports-duration.html" class="active">Status Duration</a>
+                    <a href="reports-devices.html">Devices/Interviewers</a>
+                    <a href="reports-map.html">Map Report</a>
+                    <a href="reports-cumulative.html">Cumulative Interview Chart</a>
+                    <a href="reports-quantity.html">Quantity</a>
+                    <a href="reports-speed.html">Speed</a>
+                    <a href="reports-statistics.html">Survey Statistics</a>
+                </div>
+            </div>
+            <a href="interviews.html">Interviews</a>
+            <a href="surveys.html">Surveys</a>
+            <a href="data-export.html">Data Export</a>
+            <a href="users.html">Users</a>
+            <a href="/designer/index.html">Form Designer</a>
+            <a href="settings.html">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span id="userName">Loading...</span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <div style="padding: 40px; text-align: center;">
+        <h1>Status Duration Report</h1>
+        <p style="color: #666; margin-top: 20px;">
+            This report analyzes how long interviews remain in each status (assigned, in progress, completed, etc.).
+        </p>
+        <p style="color: #999; margin-top: 40px; font-style: italic;">
+            Coming soon...
+        </p>
+    </div>
+
+    <script>
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('userName').textContent = username;
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../login.html';
+        }
+    </script>
+</body>
+</html>

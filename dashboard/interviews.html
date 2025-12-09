@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interviews - Agriculture Data Collection</title>
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="dropdown-menu.css">
     <style>
         .interviews-container {
             display: flex;
@@ -405,7 +406,20 @@
         <ul class="nav-menu">
             <li><a href="dashboard.html">Dashboard</a></li>
             <li><a href="workspaces.html">Workspaces</a></li>
-            <li><a href="reports.html">Reports</a></li>
+            <li class="nav-item">
+                <a href="reports.html">Reports <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-menu">
+                    <a href="reports.html">Surveys and Statuses</a>
+                    <a href="reports-teams.html">Teams and Statuses</a>
+                    <a href="reports-duration.html">Status Duration</a>
+                    <a href="reports-devices.html">Devices/Interviewers</a>
+                    <a href="reports-map.html">Map Report</a>
+                    <a href="reports-cumulative.html">Cumulative Interview Chart</a>
+                    <a href="reports-quantity.html">Quantity</a>
+                    <a href="reports-speed.html">Speed</a>
+                    <a href="reports-statistics.html">Survey Statistics</a>
+                </div>
+            </li>
             <li><a href="interviews.html" class="active">Interviews</a></li>
             <li><a href="surveys.html">Surveys</a></li>
             <li><a href="data-export.html">Data Export</a></li>

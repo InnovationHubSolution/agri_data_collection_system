@@ -7,6 +7,77 @@
     <title>Reports - Agriculture Data System</title>
     <link rel="stylesheet" href="dashboard.css">
     <style>
+        /* Dropdown Menu Styles */
+        .nav-links {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-item > a {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-item .dropdown-arrow {
+            font-size: 10px;
+            transition: transform 0.3s;
+        }
+
+        .nav-item:hover .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 220px;
+            display: none;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .nav-item:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 15px;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-menu a:first-child {
+            border-radius: 4px 4px 0 0;
+        }
+
+        .dropdown-menu a:last-child {
+            border-bottom: none;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .dropdown-menu a:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-menu a.active {
+            background: #007bff;
+            color: white;
+        }
+
         .reports-header {
             background: white;
             padding: 20px 30px;
@@ -300,7 +371,22 @@
         <div class="nav-links">
             <a href="index.html">Dashboard</a>
             <a href="workspaces.html">Workspaces</a>
-            <a href="reports.html" class="active">Reports</a>
+            <div class="nav-item">
+                <a href="reports.html" class="active">
+                    Reports <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="reports.html" class="active">Surveys and Statuses</a>
+                    <a href="reports-teams.html">Teams and Statuses</a>
+                    <a href="reports-duration.html">Status Duration</a>
+                    <a href="reports-devices.html">Devices/Interviewers</a>
+                    <a href="reports-map.html">Map Report</a>
+                    <a href="reports-cumulative.html">Cumulative Interview Chart</a>
+                    <a href="reports-quantity.html">Quantity</a>
+                    <a href="reports-speed.html">Speed</a>
+                    <a href="reports-statistics.html">Survey Statistics</a>
+                </div>
+            </div>
             <a href="interviews.html">Interviews</a>
             <a href="surveys.html">Surveys</a>
             <a href="data-export.html">Data Export</a>
