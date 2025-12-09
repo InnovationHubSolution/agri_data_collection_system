@@ -635,6 +635,169 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
     }
 });
 
+// ==================== INTERVIEWS ENDPOINTS ====================
+
+// Get all interviews with details
+app.get('/api/interviews', authenticate, async (req, res) => {
+    try {
+        const role = req.user.role;
+        const userId = req.user.userId;
+
+        let query = `
+            SELECT 
+                s.id,
+                CONCAT(EXTRACT(YEAR FROM s.created_at), '-', 
+                       LPAD(EXTRACT(MONTH FROM s.created_at)::text, 2, '0'), '-',
+                       LPAD(s.id::text, 6, '0')) as interview_key,
+                COALESCE(s.farmer_name, 'Unknown') as identifying_questions,
+                u.username as responsible,
+                s.updated_at,
+                0 as errors_count,
+                CASE 
+                    WHEN s.farmer_name IS NULL OR s.farmer_name = '' THEN 1
+                    ELSE 0
+                END as not_answered,
+                'CAPI' as interview_mode,
+                COALESCE(s.status, 'interviewer_assigned') as status,
+                CASE 
+                    WHEN s.synced = true THEN true
+                    ELSE false
+                END as received_by_tablet,
+                COALESCE(s.assignment_id::text, '-') as assignment,
+                COALESCE(ft.title, 'Farm Survey') as questionnaire_title,
+                COALESCE(ft.version, '1') as version
+            FROM surveys s
+            LEFT JOIN users u ON s.user_id = u.username
+            LEFT JOIN form_templates ft ON s.form_template_id = ft.id
+        `;
+
+        // Filter by role
+        if (role === 'enumerator') {
+            query += ` WHERE s.user_id = $1`;
+        } else if (role === 'supervisor') {
+            query += ` WHERE (s.user_id = $1 OR u.supervisor_id = $1)`;
+        }
+        // Admin sees all
+
+        query += ` ORDER BY s.updated_at DESC`;
+
+        const result = role === 'admin' 
+            ? await pool.query(query)
+            : await pool.query(query, [userId]);
+
+        res.json({
+            interviews: result.rows,
+            count: result.rows.length
+        });
+
+    } catch (error) {
+        console.error('Get interviews error:', error);
+        res.status(500).json({ error: 'Failed to fetch interviews' });
+    }
+});
+
+// Export interviews
+app.get('/api/interviews/export', authenticate, async (req, res) => {
+    try {
+        const { format, questionnaire, status, responsible, mode } = req.query;
+        const role = req.user.role;
+        const userId = req.user.userId;
+
+        let query = `
+            SELECT 
+                CONCAT(EXTRACT(YEAR FROM s.created_at), '-', 
+                       LPAD(EXTRACT(MONTH FROM s.created_at)::text, 2, '0'), '-',
+                       LPAD(s.id::text, 6, '0')) as interview_key,
+                COALESCE(s.farmer_name, 'Unknown') as identifying_questions,
+                u.username as responsible,
+                s.updated_at,
+                0 as errors_count,
+                CASE 
+                    WHEN s.farmer_name IS NULL OR s.farmer_name = '' THEN 1
+                    ELSE 0
+                END as not_answered,
+                'CAPI' as interview_mode,
+                COALESCE(s.status, 'interviewer_assigned') as status,
+                CASE 
+                    WHEN s.synced = true THEN 'Yes'
+                    ELSE 'No'
+                END as received_by_tablet,
+                COALESCE(s.assignment_id::text, '-') as assignment,
+                COALESCE(ft.title, 'Farm Survey') as questionnaire_title
+            FROM surveys s
+            LEFT JOIN users u ON s.user_id = u.username
+            LEFT JOIN form_templates ft ON s.form_template_id = ft.id
+            WHERE 1=1
+        `;
+
+        const params = [];
+        let paramIndex = 1;
+
+        // Filter by role
+        if (role === 'enumerator') {
+            query += ` AND s.user_id = $${paramIndex++}`;
+            params.push(userId);
+        } else if (role === 'supervisor') {
+            query += ` AND (s.user_id = $${paramIndex} OR u.supervisor_id = $${paramIndex})`;
+            params.push(userId);
+            paramIndex++;
+        }
+
+        // Apply filters
+        if (questionnaire) {
+            query += ` AND ft.title = $${paramIndex++}`;
+            params.push(questionnaire);
+        }
+        if (status) {
+            query += ` AND s.status = $${paramIndex++}`;
+            params.push(status);
+        }
+        if (responsible) {
+            query += ` AND u.username = $${paramIndex++}`;
+            params.push(responsible);
+        }
+
+        query += ` ORDER BY s.updated_at DESC`;
+
+        const result = await pool.query(query, params);
+
+        // Generate CSV
+        const delimiter = format === 'tab' ? '\t' : ',';
+        const headers = [
+            'Interview Key', 'Identifying Questions', 'Responsible', 
+            'Updated On', 'Errors Count', 'Not Answered', 
+            'Interview Mode', 'Status', 'Received by Tablet', 
+            'Assignment', 'Questionnaire'
+        ].join(delimiter);
+
+        const rows = result.rows.map(row => {
+            return [
+                row.interview_key,
+                `"${row.identifying_questions}"`,
+                row.responsible,
+                row.updated_at,
+                row.errors_count,
+                row.not_answered,
+                row.interview_mode,
+                row.status,
+                row.received_by_tablet,
+                row.assignment,
+                `"${row.questionnaire_title}"`
+            ].join(delimiter);
+        });
+
+        const csv = [headers, ...rows].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="interviews_${new Date().toISOString().split('T')[0]}.${format === 'tab' ? 'txt' : 'csv'}"`);
+        res.send(csv);
+
+    } catch (error) {
+        console.error('Export interviews error:', error);
+        res.status(500).json({ error: 'Failed to export interviews' });
+    }
+});
+
 // ==================== USER MANAGEMENT ====================
 
 // Get all users (admin/supervisor only)
@@ -850,6 +1013,9 @@ async function startServer() {
             console.log('   Reports:');
             console.log('     GET    /api/reports/surveys-statuses');
             console.log('     GET    /api/reports/surveys-statuses/export');
+            console.log('   Interviews:');
+            console.log('     GET    /api/interviews');
+            console.log('     GET    /api/interviews/export');
             console.log('   Dashboard:');
             console.log('     GET    /api/dashboard');
             console.log('   User Management:');
