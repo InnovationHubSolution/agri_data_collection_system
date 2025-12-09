@@ -18,7 +18,7 @@
             position: relative;
         }
 
-        .nav-item > a {
+        .nav-item>a {
             display: flex;
             align-items: center;
             gap: 5px;
@@ -40,7 +40,7 @@
             background: white;
             border: 1px solid #dee2e6;
             border-radius: 4px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             min-width: 220px;
             display: none;
             z-index: 1000;
@@ -388,7 +388,16 @@
                 </div>
             </div>
             <a href="interviews.html">Interviews</a>
-            <a href="surveys.html">Surveys</a>
+            <div class="nav-item">
+                <a href="questionnaires.html">
+                    Survey Setup <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="questionnaires.html">Questionnaires</a>
+                    <a href="assignments.html">Assignments</a>
+                    <a href="maps.html">Maps</a>
+                </div>
+            </div>
             <a href="data-export.html">Data Export</a>
             <a href="users.html">Users</a>
             <a href="/designer/index.html">Form Designer</a>

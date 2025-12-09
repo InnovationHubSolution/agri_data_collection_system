@@ -34,7 +34,7 @@ const PORT = process.env.PORT || 3000;
 // Background export processing function
 async function processExport(exportId) {
     const { pool } = require('./database');
-    
+
     try {
         // Update status to processing
         await pool.query(
@@ -62,7 +62,7 @@ async function processExport(exportId) {
         console.log(`Export ${exportId} completed successfully`);
     } catch (error) {
         console.error(`Export ${exportId} failed:`, error);
-        
+
         // Update status to failed
         await pool.query(
             'UPDATE export_jobs SET status = $1, error_message = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
@@ -1187,7 +1187,7 @@ app.get('/api/export/history', authenticate, async (req, res) => {
 
         query += ` ORDER BY created_at DESC LIMIT 50`;
 
-        const result = role === 'admin' 
+        const result = role === 'admin'
             ? await pool.query(query)
             : await pool.query(query, [userId]);
 
@@ -1225,7 +1225,7 @@ app.get('/api/export/download/:id', authenticate, async (req, res) => {
         // In a real system, you would read the actual file from disk
         // For now, generate CSV data on the fly
         const { questionnaireId, statusFilter } = exportJob;
-        
+
         let query = `
             SELECT s.*, u.username as enumerator, ft.title as questionnaire
             FROM surveys s
@@ -1248,18 +1248,18 @@ app.get('/api/export/download/:id', authenticate, async (req, res) => {
         }
 
         const surveyResult = await pool.query(query, params);
-        
+
         // Generate CSV
         const csvRows = [
             ['ID', 'Interview Key', 'Farmer Name', 'Household Size', 'Phone', 'Village', 'Island',
-                'Latitude', 'Longitude', 'GPS Accuracy', 'Farm Size', 'Crops', 
+                'Latitude', 'Longitude', 'GPS Accuracy', 'Farm Size', 'Crops',
                 'Pest Issues', 'Status', 'Created At', 'Enumerator', 'Questionnaire']
         ];
 
         surveyResult.rows.forEach((s, index) => {
             const interviewKey = `${new Date(s.created_at).getFullYear()}-${String(new Date(s.created_at).getMonth() + 1).padStart(2, '0')}-${String(s.id).padStart(6, '0')}`;
             const crops = typeof s.crops === 'string' ? s.crops : JSON.stringify(s.crops);
-            
+
             csvRows.push([
                 s.id,
                 interviewKey,
@@ -1340,15 +1340,15 @@ app.post('/api/workspaces', authenticate, authorize(['admin']), async (req, res)
 
         // Validate name format
         if (!/^[a-z0-9_-]{3,50}$/.test(name)) {
-            return res.status(400).json({ 
-                error: 'Invalid workspace name. Must be 3-50 characters, lowercase letters, numbers, underscores, or hyphens only' 
+            return res.status(400).json({
+                error: 'Invalid workspace name. Must be 3-50 characters, lowercase letters, numbers, underscores, or hyphens only'
             });
         }
 
         // Validate display name
         if (!display_name || display_name.trim().length === 0 || display_name.length > 200) {
-            return res.status(400).json({ 
-                error: 'Display name is required and must be 200 characters or less' 
+            return res.status(400).json({
+                error: 'Display name is required and must be 200 characters or less'
             });
         }
 
@@ -1380,8 +1380,8 @@ app.put('/api/workspaces/:name', authenticate, authorize(['admin']), async (req,
 
         // Validate display name
         if (!display_name || display_name.trim().length === 0 || display_name.length > 200) {
-            return res.status(400).json({ 
-                error: 'Display name is required and must be 200 characters or less' 
+            return res.status(400).json({
+                error: 'Display name is required and must be 200 characters or less'
             });
         }
 
@@ -1427,8 +1427,8 @@ app.delete('/api/workspaces/:name', authenticate, authorize(['admin']), async (r
         );
 
         if (parseInt(questionnaires.rows[0].count) > 0) {
-            return res.status(400).json({ 
-                error: 'Cannot delete workspace with existing questionnaires. Please delete all questionnaires first.' 
+            return res.status(400).json({
+                error: 'Cannot delete workspace with existing questionnaires. Please delete all questionnaires first.'
             });
         }
 
@@ -1439,8 +1439,8 @@ app.delete('/api/workspaces/:name', authenticate, authorize(['admin']), async (r
         );
 
         if (parseInt(surveys.rows[0].count) > 0) {
-            return res.status(400).json({ 
-                error: 'Cannot delete workspace with existing surveys. Please delete all surveys first.' 
+            return res.status(400).json({
+                error: 'Cannot delete workspace with existing surveys. Please delete all surveys first.'
             });
         }
 

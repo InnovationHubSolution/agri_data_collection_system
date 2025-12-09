@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -208,7 +209,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         .modal.active {
@@ -223,7 +224,7 @@
             border-radius: 4px;
             width: 500px;
             max-width: 90%;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .modal-header {
@@ -286,7 +287,7 @@
         .form-group input:focus {
             outline: none;
             border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
         }
 
         .form-group .help-text {
@@ -390,6 +391,7 @@
         }
     </style>
 </head>
+
 <body>
     <nav class="dashboard-nav">
         <div class="nav-brand">
@@ -413,7 +415,14 @@
                 </div>
             </li>
             <li><a href="interviews.html">Interviews</a></li>
-            <li><a href="surveys.html">Surveys</a></li>
+            <li class="dropdown-nav">
+                <a href="questionnaires.html">Survey Setup <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-submenu">
+                    <a href="questionnaires.html">Questionnaires</a>
+                    <a href="assignments.html">Assignments</a>
+                    <a href="maps.html">Maps</a>
+                </div>
+            </li>
             <li><a href="data-export.html">Data Export</a></li>
             <li><a href="users.html">Users</a></li>
             <li><a href="../designer/index.html">Form Designer</a></li>
@@ -431,7 +440,8 @@
         <div class="workspaces-header">
             <div>
                 <h1>Workspaces</h1>
-                <p class="workspace-description">Each workspace has isolated questionnaires, interviews and assignments.</p>
+                <p class="workspace-description">Each workspace has isolated questionnaires, interviews and assignments.
+                </p>
             </div>
             <button class="btn-create-workspace" onclick="openCreateModal()">
                 CREATE NEW
@@ -478,15 +488,15 @@
                 <form id="workspaceForm">
                     <div class="form-group">
                         <label for="workspaceName" class="required">Name</label>
-                        <input type="text" id="workspaceName" required maxlength="50" 
-                               placeholder="e.g., primary, survey2024">
+                        <input type="text" id="workspaceName" required maxlength="50"
+                            placeholder="e.g., primary, survey2024">
                         <div class="help-text">Unique identifier (lowercase, no spaces, 3-50 characters)</div>
                         <div id="nameError" class="form-error"></div>
                     </div>
                     <div class="form-group">
                         <label for="workspaceDisplayName" class="required">Display Name</label>
                         <input type="text" id="workspaceDisplayName" required maxlength="200"
-                               placeholder="e.g., Default Workspace">
+                            placeholder="e.g., Default Workspace">
                         <div class="help-text">Human-readable name shown in the interface</div>
                         <div id="displayNameError" class="form-error"></div>
                     </div>
@@ -501,4 +511,5 @@
 
     <script src="workspaces.js"></script>
 </body>
+
 </html>

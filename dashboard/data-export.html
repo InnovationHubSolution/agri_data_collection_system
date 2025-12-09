@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,7 +42,7 @@
             background: white;
             padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .export-section h2 {
@@ -83,13 +84,11 @@
         }
 
         .form-group select:disabled {
-            background: repeating-linear-gradient(
-                45deg,
-                #f8f9fa,
-                #f8f9fa 10px,
-                #e9ecef 10px,
-                #e9ecef 20px
-            );
+            background: repeating-linear-gradient(45deg,
+                    #f8f9fa,
+                    #f8f9fa 10px,
+                    #e9ecef 10px,
+                    #e9ecef 20px);
             cursor: not-allowed;
         }
 
@@ -286,6 +285,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar">
@@ -311,7 +311,14 @@
                 </div>
             </li>
             <li><a href="interviews.html">Interviews</a></li>
-            <li><a href="surveys.html">Surveys</a></li>
+            <li class="dropdown-nav">
+                <a href="questionnaires.html">Survey Setup <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-submenu">
+                    <a href="questionnaires.html">Questionnaires</a>
+                    <a href="assignments.html">Assignments</a>
+                    <a href="maps.html">Maps</a>
+                </div>
+            </li>
             <li><a href="data-export.html" class="active">Data Export</a></li>
             <li><a href="users.html">Users</a></li>
             <li><a href="../designer/index.html">Form Designer</a></li>
@@ -327,8 +334,9 @@
         <div class="export-header">
             <h1>Data Export</h1>
             <p class="export-description">
-                Pressing Generate button creates a data archive of interviews available on the server at that time. 
-                The time of archive creation and the archive size are shown in the table. The last generated data archive 
+                Pressing Generate button creates a data archive of interviews available on the server at that time.
+                The time of archive creation and the archive size are shown in the table. The last generated data
+                archive
                 can be downloaded by pressing Download button. Press Generate button again to create a new archive.
             </p>
         </div>
@@ -375,9 +383,8 @@
 
                     <div class="form-group">
                         <label>Date range</label>
-                        <input type="text" id="dateRange" placeholder="All time" readonly 
-                               value="All time" 
-                               style="cursor: pointer;">
+                        <input type="text" id="dateRange" placeholder="All time" readonly value="All time"
+                            style="cursor: pointer;">
                     </div>
 
                     <div class="form-actions">
@@ -391,7 +398,7 @@
             <div class="export-section">
                 <h2>Previously generated export sets</h2>
                 <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
-                    Data is exported in a zip archive containing the data files of specified content and type. 
+                    Data is exported in a zip archive containing the data files of specified content and type.
                     Below is a list of previously exported data.
                 </p>
 
@@ -408,4 +415,5 @@
 
     <script src="data-export.js"></script>
 </body>
+
 </html>

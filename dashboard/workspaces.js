@@ -86,12 +86,12 @@ async function loadWorkspaces() {
 
 function renderWorkspaces() {
     const tbody = document.getElementById('workspacesTableBody');
-    
+
     // Filter workspaces
     let filteredWorkspaces = workspaces.filter(w => {
         if (!searchQuery) return true;
         return w.name.toLowerCase().includes(searchQuery) ||
-               w.display_name.toLowerCase().includes(searchQuery);
+            w.display_name.toLowerCase().includes(searchQuery);
     });
 
     // Sort workspaces
@@ -154,7 +154,7 @@ function renderWorkspaces() {
 
 function updatePagination(totalCount) {
     const totalPages = Math.ceil(totalCount / pageSize);
-    
+
     document.getElementById('btnFirst').disabled = currentPage === 1;
     document.getElementById('btnPrevious').disabled = currentPage === 1;
     document.getElementById('btnNext').disabled = currentPage >= totalPages;
@@ -187,13 +187,13 @@ function goToPage(action) {
 function openCreateModal() {
     editMode = false;
     currentWorkspaceId = null;
-    
+
     document.getElementById('modalTitle').textContent = 'Create New Workspace';
     document.getElementById('workspaceForm').reset();
     document.getElementById('nameError').textContent = '';
     document.getElementById('displayNameError').textContent = '';
     document.querySelector('.btn-submit').textContent = 'CREATE';
-    
+
     document.getElementById('workspaceModal').classList.add('active');
 }
 
@@ -351,7 +351,7 @@ function viewWorkspace(name) {
 function showAlert(type, message) {
     const container = document.getElementById('alertContainer');
     const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
-    
+
     container.innerHTML = `
         <div class="alert ${alertClass} show">
             ${escapeHtml(message)}

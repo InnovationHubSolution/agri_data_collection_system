@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaires - Agriculture Data System</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="dropdown-menu.css">
+    <style>
+        .questionnaires-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            color: #333;
+            margin: 0;
+        }
+
+        .btn-import {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        .btn-import:hover {
+            background-color: #218838;
+        }
+
+        .questionnaires-table {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .questionnaires-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .questionnaires-table th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .questionnaires-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .questionnaires-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-action:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="dashboard-nav">
+        <div class="nav-brand">
+            <h2>🌾 Agriculture Data System</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="workspaces.html">Workspaces</a>
+            <div class="nav-item">
+                <a href="reports.html">Reports <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-menu">
+                    <a href="reports.html">Surveys and Statuses</a>
+                    <a href="reports-teams.html">Teams and Statuses</a>
+                    <a href="reports-duration.html">Status Duration</a>
+                    <a href="reports-devices.html">Devices/Interviewers</a>
+                    <a href="reports-map.html">Map Report</a>
+                    <a href="reports-cumulative.html">Cumulative Interview Chart</a>
+                    <a href="reports-quantity.html">Quantity</a>
+                    <a href="reports-speed.html">Speed</a>
+                    <a href="reports-statistics.html">Survey Statistics</a>
+                </div>
+            </div>
+            <a href="interviews.html">Interviews</a>
+            <div class="nav-item">
+                <a href="questionnaires.html" class="active">Survey Setup <span class="dropdown-arrow">▼</span></a>
+                <div class="dropdown-menu">
+                    <a href="questionnaires.html" class="active">Questionnaires</a>
+                    <a href="assignments.html">Assignments</a>
+                    <a href="maps.html">Maps</a>
+                </div>
+            </div>
+            <a href="data-export.html">Data Export</a>
+            <a href="users.html">Users</a>
+            <a href="/designer/index.html">Form Designer</a>
+            <a href="settings.html">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span id="userName">Loading...</span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <div class="questionnaires-container">
+        <div class="page-header">
+            <h1>Questionnaires</h1>
+            <button class="btn-import" onclick="importQuestionnaire()">IMPORT QUESTIONNAIRE</button>
+        </div>
+
+        <div class="questionnaires-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>TITLE</th>
+                        <th>VERSION</th>
+                        <th>STATUS</th>
+                        <th>CREATED</th>
+                        <th>WORKSPACE</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="questionnairesTableBody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <div>No questionnaires yet</div>
+                                <div style="font-size: 14px; color: #999; margin-top: 10px;">
+                                    Import questionnaires from Form Designer or create new ones
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('userName').textContent = username;
+
+        function importQuestionnaire() {
+            alert('Import questionnaire functionality - redirects to Form Designer');
+            window.location.href = '/designer/index.html';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../login.html';
+        }
+
+        // Load questionnaires
+        async function loadQuestionnaires() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/forms', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderQuestionnaires(data);
+                }
+            } catch (error) {
+                console.error('Load questionnaires error:', error);
+            }
+        }
+
+        function renderQuestionnaires(questionnaires) {
+            const tbody = document.getElementById('questionnairesTableBody');
+
+            if (!questionnaires || questionnaires.length === 0) {
+                return;
+            }
+
+            tbody.innerHTML = questionnaires.map(q => `
+                <tr>
+                    <td>${q.title}</td>
+                    <td>Version ${q.version || 1}</td>
+                    <td><span class="status-badge ${q.published ? 'published' : 'draft'}">${q.published ? 'Published' : 'Draft'}</span></td>
+                    <td>${new Date(q.created_at).toLocaleDateString()}</td>
+                    <td>${q.workspace_name || 'primary'}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button class="btn-action" onclick="editQuestionnaire(${q.id})">Edit</button>
+                            <button class="btn-action" onclick="viewQuestionnaire(${q.id})">View</button>
+                            <button class="btn-action btn-danger" onclick="deleteQuestionnaire(${q.id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function editQuestionnaire(id) {
+            window.location.href = `/designer/index.html?id=${id}`;
+        }
+
+        function viewQuestionnaire(id) {
+            window.location.href = `/designer/index.html?id=${id}&view=true`;
+        }
+
+        async function deleteQuestionnaire(id) {
+            if (!confirm('Are you sure you want to delete this questionnaire?')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/forms/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    loadQuestionnaires();
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+            }
+        }
+
+        // Load on page load
+        window.addEventListener('DOMContentLoaded', loadQuestionnaires);
+    </script>
+</body>
+
+</html>

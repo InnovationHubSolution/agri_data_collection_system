@@ -1,16 +1,16 @@
 // Data Export Page JavaScript
 let exportJobs = [];
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkAuthentication();
     loadQuestionnaires();
     loadExportHistory();
-    
+
     // Form submission
     document.getElementById('exportForm').addEventListener('submit', handleExportSubmit);
-    
+
     // Questionnaire change to enable version
-    document.getElementById('questionnaire').addEventListener('change', function() {
+    document.getElementById('questionnaire').addEventListener('change', function () {
         const versionSelect = document.getElementById('version');
         if (this.value) {
             versionSelect.disabled = false;
@@ -48,7 +48,7 @@ function logout() {
 // Load questionnaires for dropdown
 async function loadQuestionnaires() {
     const token = localStorage.getItem('token');
-    
+
     try {
         const response = await fetch('/api/forms/published/list', {
             headers: {
@@ -59,7 +59,7 @@ async function loadQuestionnaires() {
         if (response.ok) {
             const forms = await response.json();
             const select = document.getElementById('questionnaire');
-            
+
             forms.forEach(form => {
                 const option = document.createElement('option');
                 option.value = form.id;
@@ -76,14 +76,14 @@ async function loadQuestionnaires() {
 async function loadVersions(questionnaireId) {
     const versionSelect = document.getElementById('version');
     versionSelect.innerHTML = '<option value="">Select</option>';
-    
+
     // For now, just add version 1
     // In a real system, you'd fetch actual versions from the API
     const option = document.createElement('option');
     option.value = '1';
     option.textContent = 'Version 1';
     versionSelect.appendChild(option);
-    
+
     // Auto-select if only one version
     if (versionSelect.options.length === 2) {
         versionSelect.selectedIndex = 1;
@@ -93,12 +93,12 @@ async function loadVersions(questionnaireId) {
 // Handle export form submission
 async function handleExportSubmit(e) {
     e.preventDefault();
-    
+
     const token = localStorage.getItem('token');
     const questionnaire = document.getElementById('questionnaire').value;
     const version = document.getElementById('version').value;
     const status = document.getElementById('status').value;
-    
+
     if (!questionnaire) {
         showAlert('error', 'Please select a questionnaire');
         return;
@@ -142,7 +142,7 @@ async function handleExportSubmit(e) {
 // Load export history
 async function loadExportHistory() {
     const token = localStorage.getItem('token');
-    
+
     try {
         const response = await fetch('/api/export/history', {
             headers: {
@@ -162,7 +162,7 @@ async function loadExportHistory() {
 // Render export list
 function renderExportList() {
     const listContainer = document.getElementById('exportList');
-    
+
     if (!exportJobs || exportJobs.length === 0) {
         listContainer.innerHTML = `
             <div class="empty-state">
@@ -175,18 +175,18 @@ function renderExportList() {
     }
 
     let html = '';
-    
+
     exportJobs.forEach(job => {
-        const statusClass = job.status === 'completed' ? 'completed' : 
-                           job.status === 'processing' ? 'processing' : 'in-queue';
-        
+        const statusClass = job.status === 'completed' ? 'completed' :
+            job.status === 'processing' ? 'processing' : 'in-queue';
+
         html += `
             <div class="export-item">
                 <div class="export-item-header">
                     <span class="export-number">#${job.id}</span>
                     <span class="status-badge status-${statusClass}">
-                        ${job.status === 'completed' ? 'COMPLETED' : 
-                          job.status === 'processing' ? 'PROCESSING' : 'IN QUEUE'}
+                        ${job.status === 'completed' ? 'COMPLETED' :
+                job.status === 'processing' ? 'PROCESSING' : 'IN QUEUE'}
                     </span>
                     <span style="font-size: 12px; color: #999;">
                         ${formatDate(job.created_at)}
@@ -226,7 +226,7 @@ function renderExportList() {
 }
 
 function renderExportStatus(job) {
-    switch(job.status) {
+    switch (job.status) {
         case 'completed':
             return `
                 <div class="export-status-text">
@@ -259,7 +259,7 @@ function renderExportStatus(job) {
 // Download export file
 async function downloadExport(exportId) {
     const token = localStorage.getItem('token');
-    
+
     try {
         const response = await fetch(`/api/export/download/${exportId}`, {
             headers: {
@@ -275,7 +275,7 @@ async function downloadExport(exportId) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
+
         // Get filename from Content-Disposition header or use default
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `export_${exportId}.zip`;
@@ -285,7 +285,7 @@ async function downloadExport(exportId) {
                 filename = matches[1].replace(/['"]/g, '');
             }
         }
-        
+
         a.download = filename;
         document.body.appendChild(a);
         a.click();
