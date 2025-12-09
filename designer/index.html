@@ -13,12 +13,30 @@
         <!-- Header -->
         <header class="designer-header">
             <div class="header-left">
-                <h1>📋 Survey Designer</h1>
-                <span class="form-name" id="formName">Untitled Survey</span>
+                <h1>📋 <span id="questionnaireTitle">Agriculture census 2022 listing</span></h1>
+                <div class="questionnaire-meta">
+                    <span class="badge">10Q</span>
+                    <span class="badge">3S</span>
+                    <span class="badge">2R</span>
+                    <button class="status-indicator compile" id="compileBtn" onclick="compileQuestionnaire()" title="Compile and validate questionnaire">
+                        <span id="compileText">COMPILE</span>
+                        <span id="compileErrors" style="display: none;"></span>
+                    </button>
+                    <button class="status-indicator test" id="testBtn" onclick="testQuestionnaire()" title="Test questionnaire">
+                        <span id="testText">TEST</span>
+                        <span id="testWarnings" style="display: none;"></span>
+                    </button>
+                </div>
             </div>
             <div class="header-actions">
+                <button class="btn btn-link">HELP</button>
+                <button class="btn btn-link">FORUM</button>
+                <button class="btn btn-link">HISTORY</button>
+                <button class="btn btn-secondary">DOWNLOAD PDF</button>
+                <button class="btn btn-secondary" onclick="openSettings()">SETTINGS</button>
                 <button class="btn btn-secondary" onclick="previewForm()">👁️ Preview</button>
-                <button class="btn btn-secondary" onclick="loadForm()">📂 Load</button>
+                <button class="btn btn-secondary" onclick="window.location.href='create.html'">➕ New</button>
+                <button class="btn btn-secondary" onclick="window.location.href='list.html'">📂 My Questionnaires</button>
                 <button class="btn btn-primary" onclick="saveForm()">💾 Save</button>
                 <button class="btn btn-success" onclick="publishForm()">🚀 Publish</button>
             </div>
@@ -26,28 +44,122 @@
 
         <!-- Main Designer Area -->
         <div class="designer-main">
-            <!-- Left Sidebar - Question Types Palette -->
+            <!-- Left Sidebar - Navigation and Question Types -->
             <aside class="designer-sidebar">
+                <!-- Sections List -->
+                <div class="sections-panel" id="sectionsPanel">
+                    <div class="sections-header">
+                        <span class="sections-count" id="sectionsCount">2 Sections</span>
+                        <button class="btn-icon" onclick="collapseSidebar()" title="Collapse">
+                            <span>❮</span>
+                        </button>
+                    </div>
+                    
+                    <div class="sections-list" id="sectionsList">
+                        <div class="section-item active" data-section="cover" onclick="selectSection('cover')">
+                            <div class="section-header">
+                                <span class="section-title">Cover</span>
+                                <button class="btn-help" title="Help">?</button>
+                            </div>
+                            <button class="section-menu-btn" onclick="showSectionMenu(event, 'cover')">⋮</button>
+                        </div>
+                        
+                        <div class="section-item" data-section="new-section" onclick="selectSection('new-section')">
+                            <div class="section-header">
+                                <span class="section-title">New Section</span>
+                            </div>
+                            <button class="section-menu-btn" onclick="showSectionMenu(event, 'new-section')">⋮</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-add-section" onclick="addNewSection()">
+                        <span style="margin-right: 5px;">+</span> ADD NEW SECTION
+                    </button>
+                </div>
+
+                <!-- Legacy Navigation (hidden by default) -->
+                <div class="sidebar-navigation" id="legacyNavigation" style="display: none;">
+                    <div class="nav-item active" onclick="showSection('cover')">
+                        <span class="icon">📄</span>
+                        <span>Cover</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('questions')">
+                        <span class="icon">❔</span>
+                        <span>Questions</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('validation')">
+                        <span class="icon">⚠️</span>
+                        <span>Validation</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('comments')">
+                        <span class="icon">💬</span>
+                        <span>Comments</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('attachments')">
+                        <span class="icon">📎</span>
+                        <span>Attachments</span>
+                    </div>
+                    <div class="nav-item" onclick="showSection('translations')">
+                        <span class="icon">🌐</span>
+                        <span>Translations</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+                
                 <h3>Question Types</h3>
-                <div class="question-palette">
+                <div class="question-palette" id="questionPalette">
                     <!-- Basic Input Types -->
                     <div class="palette-section">
-                        <h4>Basic</h4>
+                        <h4>Text & Input</h4>
                         <div class="question-type" draggable="true" data-type="text">
                             <span class="icon">📝</span>
                             <span class="label">Text Input</span>
                         </div>
+                        <div class="question-type" draggable="true" data-type="textarea">
+                            <span class="icon">📄</span>
+                            <span class="label">Long Text</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="email">
+                            <span class="icon">✉️</span>
+                            <span class="label">Email</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="phone">
+                            <span class="icon">📞</span>
+                            <span class="label">Phone</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="url">
+                            <span class="icon">🔗</span>
+                            <span class="label">URL</span>
+                        </div>
+                    </div>
+
+                    <!-- Number Types -->
+                    <div class="palette-section">
+                        <h4>Numbers & Dates</h4>
                         <div class="question-type" draggable="true" data-type="number">
                             <span class="icon">🔢</span>
                             <span class="label">Number</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="integer">
+                            <span class="icon">🔢</span>
+                            <span class="label">Integer</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="decimal">
+                            <span class="icon">🔢</span>
+                            <span class="label">Decimal</span>
                         </div>
                         <div class="question-type" draggable="true" data-type="date">
                             <span class="icon">📅</span>
                             <span class="label">Date</span>
                         </div>
-                        <div class="question-type" draggable="true" data-type="textarea">
-                            <span class="icon">📄</span>
-                            <span class="label">Long Text</span>
+                        <div class="question-type" draggable="true" data-type="time">
+                            <span class="icon">🕐</span>
+                            <span class="label">Time</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="datetime">
+                            <span class="icon">📅</span>
+                            <span class="label">Date & Time</span>
                         </div>
                     </div>
 
@@ -66,6 +178,18 @@
                             <span class="icon">▼</span>
                             <span class="label">Dropdown</span>
                         </div>
+                        <div class="question-type" draggable="true" data-type="yesno">
+                            <span class="icon">✓</span>
+                            <span class="label">Yes/No</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="rating">
+                            <span class="icon">⭐</span>
+                            <span class="label">Rating Scale</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="matrix">
+                            <span class="icon">⊞</span>
+                            <span class="label">Matrix/Grid</span>
+                        </div>
                     </div>
 
                     <!-- Location & Media -->
@@ -79,22 +203,47 @@
                             <span class="icon">📷</span>
                             <span class="label">Photo Capture</span>
                         </div>
+                        <div class="question-type" draggable="true" data-type="file">
+                            <span class="icon">📎</span>
+                            <span class="label">File Upload</span>
+                        </div>
                         <div class="question-type" draggable="true" data-type="signature">
                             <span class="icon">✍️</span>
                             <span class="label">Signature</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="barcode">
+                            <span class="icon">⊟</span>
+                            <span class="label">Barcode/QR</span>
                         </div>
                     </div>
 
                     <!-- Advanced -->
                     <div class="palette-section">
                         <h4>Advanced</h4>
+                        <div class="question-type" draggable="true" data-type="roster">
+                            <span class="icon">🔄</span>
+                            <span class="label">Roster/Repeating</span>
+                        </div>
                         <div class="question-type" draggable="true" data-type="calculated">
                             <span class="icon">🧮</span>
                             <span class="label">Calculated Field</span>
                         </div>
+                    </div>
+
+                    <!-- Layout -->
+                    <div class="palette-section">
+                        <h4>Layout</h4>
                         <div class="question-type" draggable="true" data-type="section">
                             <span class="icon">📑</span>
                             <span class="label">Section Header</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="info">
+                            <span class="icon">ℹ️</span>
+                            <span class="label">Info Text</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="pagebreak">
+                            <span class="icon">📄</span>
+                            <span class="label">Page Break</span>
                         </div>
                     </div>
                 </div>
@@ -102,30 +251,294 @@
 
             <!-- Center - Form Canvas -->
             <main class="form-canvas">
-                <div class="canvas-header">
-                    <input type="text" id="surveyTitle" class="survey-title-input" placeholder="Enter survey title..."
-                        value="Farm Household Survey">
-                    <textarea id="surveyDescription" class="survey-description-input"
-                        placeholder="Enter survey description...">Collect information about farm households, crops, and livestock.</textarea>
+                <div class="canvas-toolbar">
+                    <button class="btn btn-primary" onclick="addQuestion()">
+                        <span class="icon">➕</span> ADD QUESTION
+                    </button>
+                    <button class="btn btn-secondary" onclick="addSubSection()">
+                        <span class="icon">📂</span> ADD SUB-SECTION
+                    </button>
+                    <button class="btn btn-secondary" onclick="addRoster()">
+                        <span class="icon">📋</span> ADD ROSTER
+                    </button>
+                    <button class="btn btn-secondary" onclick="addStaticText()">
+                        <span class="icon">📝</span> ADD STATIC TEXT
+                    </button>
+                    <button class="btn btn-secondary" onclick="addVariable()">
+                        <span class="icon">🔤</span> ADD VARIABLE
+                    </button>
+                    <button class="btn btn-secondary" onclick="searchQuestions()">
+                        <span class="icon">🔍</span> SEARCH FOR QUESTION
+                    </button>
+                    <button class="btn btn-ghost" onclick="pasteSection()">
+                        <span class="icon">📋</span> PASTE
+                    </button>
                 </div>
 
-                <div id="formBuilder" class="form-builder">
-                    <div class="drop-zone">
-                        <p class="drop-zone-text">Drag question types here to build your survey</p>
+                <div class="canvas-content">
+                    <div class="section-header">
+                        <h2 id="currentSectionTitle">Cover</h2>
+                        <p class="section-description">This section is empty.</p>
+                        <p class="section-hint">
+                            You can start by using <button class="btn-inline" onclick="addQuestion()">ADD QUESTION</button> and 
+                            <button class="btn-inline" onclick="addSubSection()">ADD SUB-SECTION</button> buttons<br>
+                            on top of this block or manage sections with <span class="icon">☰</span> left panel
+                        </p>
+                        <p class="section-note">
+                            Questionnaire name, variable, collaboration and other options<br>
+                            can be found at <button class="btn-inline" onclick="openSettings()">SETTINGS</button> panel (top right corner)
+                        </p>
+                    </div>
+
+                    <div id="questionsContainer" class="questions-container">
+                        <!-- Questions will be rendered here -->
                     </div>
                 </div>
 
-                <button class="btn btn-add-question" onclick="showQuestionModal()">+ Add Question</button>
+                <button class="btn btn-add-question" onclick="addQuestion()">+ Add Question</button>
             </main>
 
             <!-- Right Sidebar - Question Properties -->
             <aside class="properties-panel" id="propertiesPanel">
-                <h3>Question Properties</h3>
-                <div class="no-selection">
-                    <p>Select a question to edit its properties</p>
+                <div class="no-selection" id="noSelection">
+                    <p>Select a question or section to edit its properties</p>
                 </div>
+                
+                <!-- Section Properties Form -->
+                <div class="section-properties-form" id="sectionPropertiesForm" style="display: none;">
+                    <h3 style="margin-bottom: 20px; font-size: 16px; color: #999; text-transform: uppercase;" id="sectionFormTitle">SECTION</h3>
+                    
+                    <div class="property-section">
+                        <label>Title</label>
+                        <input type="text" id="sectionTitle" class="form-control" placeholder="New Section" onchange="updateSectionProperty('title', this.value)">
+                    </div>
+
+                    <div class="property-section">
+                        <label>
+                            variable name
+                            <button class="btn-help" title="Unique identifier for this section">?</button>
+                        </label>
+                        <input type="text" id="sectionVariableName" class="form-control" placeholder="section_1" onchange="updateSectionProperty('variable', this.value)">
+                    </div>
+
+                    <div class="property-section">
+                        <button class="btn-link" onclick="addEnablingCondition()">+ ADD ENABLING CONDITION</button>
+                    </div>
+
+                    <div class="property-section" id="enablingConditionSection" style="display: none;">
+                        <label>Enabling condition</label>
+                        <textarea id="sectionEnablingCondition" class="form-control" rows="3" placeholder="e.g., age > 18" onchange="updateSectionProperty('enableCondition', this.value)"></textarea>
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Section will only be shown when this condition is true
+                        </small>
+                    </div>
+
+                    <div class="property-section" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                        <button class="btn-secondary" onclick="saveSectionChanges()" style="width: 100%;">SAVE</button>
+                        <button class="btn-link" style="color: var(--danger-color); margin-top: 10px;" onclick="deleteSection()">DELETE SECTION</button>
+                    </div>
+                </div>
+                
+                <!-- Question Properties Form -->
                 <div class="properties-form" id="propertiesForm" style="display: none;">
-                    <!-- Populated dynamically when question selected -->
+                    <h3 style="margin-bottom: 20px; font-size: 16px; color: #999; text-transform: uppercase;">COVER</h3>
+                    
+                    <div class="property-section">
+                        <label>
+                            Question Type
+                            <button class="btn-help" title="Type of question">?</button>
+                        </label>
+                        <select id="questionType" class="form-control question-type-select" onchange="updateQuestionType()">
+                            <optgroup label="📝 Text">
+                                <option value="text">Text</option>
+                                <option value="textarea">Text (Long)</option>
+                            </optgroup>
+                            <optgroup label="🔢 Numeric">
+                                <option value="number">Numeric</option>
+                                <option value="integer">Integer</option>
+                                <option value="decimal">Decimal</option>
+                            </optgroup>
+                            <optgroup label="📅 Date & Time">
+                                <option value="date">Date</option>
+                                <option value="time">Time</option>
+                                <option value="datetime">Date & Time</option>
+                            </optgroup>
+                            <optgroup label="☑️ Categorical">
+                                <option value="radio">Categorical: Single-select</option>
+                                <option value="checkbox">Categorical: Multi-select</option>
+                                <option value="dropdown">Categorical: Dropdown</option>
+                                <option value="yesno">Yes/No</option>
+                            </optgroup>
+                            <optgroup label="🌐 Special">
+                                <option value="email">Email</option>
+                                <option value="phone">Phone</option>
+                                <option value="url">URL</option>
+                                <option value="gps">GPS</option>
+                                <option value="barcode">Barcode</option>
+                            </optgroup>
+                            <optgroup label="📷 Media">
+                                <option value="photo">Picture</option>
+                                <option value="file">File Upload</option>
+                                <option value="signature">Signature</option>
+                            </optgroup>
+                            <optgroup label="⚙️ Advanced">
+                                <option value="calculated">Variable</option>
+                                <option value="rating">Rating Scale</option>
+                                <option value="matrix">Matrix/Grid</option>
+                                <option value="roster">List (Roster)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="property-section">
+                        <label>
+                            Variable name
+                            <button class="btn-help" title="Unique identifier for this question">?</button>
+                        </label>
+                        <input type="text" id="questionVariable" class="form-control" placeholder="question_1" onchange="updateQuestionProperty('variable', this.value)">
+                    </div>
+
+                    <div class="property-section">
+                        <label>
+                            Variable label
+                            <button class="btn-help" title="Descriptive label for data export">?</button>
+                        </label>
+                        <input type="text" id="questionLabel" class="form-control" placeholder="Enter question label" onchange="updateQuestionProperty('label', this.value)">
+                    </div>
+
+                    <div class="property-section">
+                        <label>Question text</label>
+                        <textarea id="questionText" class="form-control" rows="4" placeholder="Enter the question text that respondents will see" onchange="updateQuestionProperty('questionText', this.value)"></textarea>
+                    </div>
+
+                    <div class="property-section" id="patternSection" style="display: none;">
+                        <label>
+                            Pattern
+                            <button class="btn-help" title="Validation pattern (regex)">?</button>
+                        </label>
+                        <input type="text" id="questionPattern" class="form-control" placeholder="e.g., [A-Z]{3}" onchange="updateQuestionProperty('pattern', this.value)">
+                    </div>
+
+                    <div class="property-section" id="optionsSection" style="display: none;">
+                        <button class="btn-link" onclick="editOptions()">EDIT OPTIONS</button>
+                    </div>
+
+                    <div class="property-section" id="displayModeSection" style="display: none;">
+                        <label>
+                            Display mode
+                            <button class="btn-help" title="How the options will be displayed">?</button>
+                        </label>
+                        <select id="questionDisplayMode" class="form-control" onchange="updateQuestionProperty('displayMode', this.value)">
+                            <option value="radio">Radio button list</option>
+                            <option value="combo">Combo box</option>
+                            <option value="cascading">Cascading combo box</option>
+                        </select>
+                    </div>
+
+                    <div class="property-section" id="categoriesSourceSection" style="display: none;">
+                        <label>
+                            Source of categories
+                            <button class="btn-help" title="Where the answer options come from">?</button>
+                        </label>
+                        <select id="questionCategoriesSource" class="form-control" onchange="updateQuestionProperty('categoriesSource', this.value)">
+                            <option value="user-defined">User defined categories</option>
+                            <option value="reusable">Reusable categories</option>
+                            <option value="list-question">List question or question from roster group</option>
+                        </select>
+                    </div>
+
+                    <!-- Roster-specific properties -->
+                    <div class="property-section" id="rosterSourceSection" style="display: none;">
+                        <label>
+                            Roster source
+                            <button class="btn-help" title="Source of roster items">?</button>
+                        </label>
+                        <select id="questionRosterSource" class="form-control" onchange="updateRosterSource(this.value)">
+                            <option value="fixed">Fixed set of items</option>
+                            <option value="list">List question</option>
+                            <option value="multi-select">Multi-select question</option>
+                            <option value="numeric">Numeric question</option>
+                        </select>
+                    </div>
+
+                    <div class="property-section" id="rosterIdSection" style="display: none;">
+                        <label>
+                            Roster ID
+                            <button class="btn-help" title="Unique identifier for roster">?</button>
+                        </label>
+                        <input type="text" id="questionRosterId" class="form-control" placeholder="roster_id" onchange="updateQuestionProperty('rosterId', this.value)">
+                    </div>
+
+                    <div class="property-section" id="rosterNameSection" style="display: none;">
+                        <label>
+                            Roster name
+                            <button class="btn-help" title="Display name for the roster">?</button>
+                        </label>
+                        <input type="text" id="questionRosterName" class="form-control" placeholder="New roster - %rostertitle%" onchange="updateQuestionProperty('rosterName', this.value)">
+                    </div>
+
+                    <div class="property-section" id="rosterSourceQuestionSection" style="display: none;">
+                        <label>Source question (answer determines both the number and the name of roster rows):</label>
+                        <select id="questionRosterSourceQuestion" class="form-control" onchange="updateQuestionProperty('rosterSourceQuestion', this.value)">
+                            <option value="">Select question</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="property-section" id="rosterItemsSection" style="display: none;">
+                        <label>Roster items</label>
+                        <div style="border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; margin-top: 8px;">
+                            <table style="width: 100%; border-collapse: collapse;" id="rosterItemsTable">
+                                <tbody id="rosterItemsList">
+                                    <!-- Roster items will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn-link" onclick="addRosterItem()">+ ADD ITEM</button>
+                            <button class="btn-link" onclick="toggleRosterTextView()">TEXT VIEW</button>
+                        </div>
+                    </div>
+
+                    <div class="property-section" id="rosterDisplayModeSection" style="display: none;">
+                        <label>
+                            Display mode
+                            <button class="btn-help" title="How the roster will be displayed">?</button>
+                        </label>
+                        <select id="questionRosterDisplayMode" class="form-control" onchange="updateQuestionProperty('rosterDisplayMode', this.value)">
+                            <option value="sub-section">Sub-Section</option>
+                            <option value="table">Table</option>
+                            <option value="matrix">Matrix</option>
+                        </select>
+                    </div>
+
+                    <div class="property-section">
+                        <button class="btn-link" onclick="addInterviewerInstruction()">+ ADD INTERVIEWER INSTRUCTION</button>
+                    </div>
+
+                    <div class="property-section">
+                        <button class="btn-link" onclick="addValidationCondition()">+ ADD NEW VALIDATION CONDITION</button>
+                    </div>
+
+                    <div class="property-section">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="criticalQuestion" id="questionCritical" onchange="updateQuestionProperty('critical', this.checked)">
+                            <span>This is a critical question</span>
+                            <button class="btn-help" title="Critical questions must be answered">?</button>
+                        </label>
+                    </div>
+
+                    <div class="property-section" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn-secondary" onclick="saveQuestionChanges()" style="flex: 1; min-width: 100px;">SAVE</button>
+                            <button class="btn-outline" onclick="cancelQuestionChanges()" style="flex: 1; min-width: 100px;">CANCEL</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                            <button class="btn-link" onclick="addCommentToQuestion()">ADD COMMENT</button>
+                            <button class="btn-link" style="color: var(--danger-color);" onclick="deleteSelectedQuestion()">DELETE</button>
+                            <button class="btn-link" onclick="moveQuestionDialog()">MOVE TO...</button>
+                        </div>
+                    </div>
                 </div>
             </aside>
         </div>

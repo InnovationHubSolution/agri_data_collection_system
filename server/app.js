@@ -92,16 +92,16 @@ app.get('/api/health', async (req, res) => {
     try {
         const { pool } = require('./database');
         await pool.query('SELECT 1');
-        res.json({ 
-            status: 'healthy', 
-            database: 'connected', 
+        res.json({
+            status: 'healthy',
+            database: 'connected',
             timestamp: new Date().toISOString(),
             version: '2.0.0'
         });
     } catch (error) {
-        res.status(503).json({ 
-            status: 'unhealthy', 
-            error: error.message 
+        res.status(503).json({
+            status: 'unhealthy',
+            error: error.message
         });
     }
 });
@@ -160,7 +160,7 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    
+
     const statusCode = err.statusCode || 500;
     const message = process.env.NODE_ENV === 'production'
         ? 'Internal server error'
@@ -177,7 +177,7 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         console.log('🚀 Starting Agriculture Data System Server...');
-        
+
         // Initialize database
         console.log('📦 Initializing database...');
         await initializeDatabase();

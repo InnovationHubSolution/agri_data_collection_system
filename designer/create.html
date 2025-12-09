@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Questionnaire - Agriculture Data System</title>
+    <link rel="stylesheet" href="designer.css">
+    <style>
+        .create-container {
+            max-width: 600px;
+            margin: 60px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .create-header {
+            margin-bottom: 30px;
+        }
+
+        .create-header h1 {
+            font-size: 28px;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .form-field {
+            margin-bottom: 25px;
+        }
+
+        .form-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .form-field input,
+        .form-field textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-field input:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        .form-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-field small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn-create {
+            flex: 1;
+            padding: 14px 24px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-create:hover {
+            background: var(--primary-color);
+        }
+
+        .btn-create:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            padding: 14px 24px;
+            background: white;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .top-nav {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-nav h2 {
+            color: var(--primary-color);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <h2>🌾 Survey Designer</h2>
+        <div class="nav-tabs">
+            <button class="nav-tab" onclick="window.location.href='index.html'">MY QUESTIONNAIRES</button>
+            <button class="nav-tab">QUESTIONNAIRES SHARED WITH ME</button>
+            <button class="nav-tab">PUBLIC QUESTIONNAIRES</button>
+            <button class="nav-tab">CLASSIFICATIONS</button>
+            <button class="nav-tab active">CREATE NEW</button>
+        </div>
+    </div>
+
+    <!-- Create Form Container -->
+    <div class="create-container">
+        <div class="create-header">
+            <h1>Create New Questionnaire</h1>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="createQuestionnaireForm">
+            <div class="form-field">
+                <label for="questionnaireTitle">Questionnaire title <span style="color: red;">*</span></label>
+                <input type="text" id="questionnaireTitle" name="title" required 
+                       placeholder="Enter questionnaire title..." maxlength="255">
+                <small>A descriptive title for your questionnaire</small>
+            </div>
+
+            <div class="form-field">
+                <label for="questionnaireVariable">Questionnaire variable</label>
+                <input type="text" id="questionnaireVariable" name="variable" 
+                       placeholder="questionnaire_name" pattern="[a-z0-9_]*" maxlength="100">
+                <small>Optional: A unique identifier (lowercase letters, numbers, and underscores only)</small>
+            </div>
+
+            <div class="form-field">
+                <label for="questionnaireDescription">Description</label>
+                <textarea id="questionnaireDescription" name="description" 
+                          placeholder="Describe the purpose of this questionnaire..."></textarea>
+                <small>Provide details about what this questionnaire collects</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-create" id="createBtn">CREATE</button>
+                <button type="button" class="btn-cancel" onclick="window.location.href='index.html'">CANCEL</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('createQuestionnaireForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('questionnaireTitle').value.trim();
+            const variable = document.getElementById('questionnaireVariable').value.trim();
+            const description = document.getElementById('questionnaireDescription').value.trim();
+            
+            if (!title) {
+                showError('Questionnaire title is required');
+                return;
+            }
+
+            // Auto-generate variable from title if not provided
+            const finalVariable = variable || title.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+
+            const createBtn = document.getElementById('createBtn');
+            createBtn.disabled = true;
+            createBtn.textContent = 'CREATING...';
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/forms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        variable: finalVariable,
+                        questions: []
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create questionnaire');
+                }
+
+                const result = await response.json();
+                
+                // Redirect to designer with the new questionnaire ID
+                window.location.href = `index.html?id=${result.id}`;
+                
+            } catch (error) {
+                console.error('Error creating questionnaire:', error);
+                showError(error.message);
+                createBtn.disabled = false;
+                createBtn.textContent = 'CREATE';
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Auto-format variable name as user types in title
+        document.getElementById('questionnaireTitle').addEventListener('input', (e) => {
+            const variableInput = document.getElementById('questionnaireVariable');
+            if (!variableInput.value) {
+                const autoVariable = e.target.value.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+                variableInput.placeholder = autoVariable || 'questionnaire_name';
+            }
+        });
+
+        // Validate variable name format
+        document.getElementById('questionnaireVariable').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        });
+    </script>
+</body>
+
+</html>

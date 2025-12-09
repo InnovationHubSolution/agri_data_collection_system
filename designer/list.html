@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Questionnaires - Agriculture Data System</title>
+    <link rel="stylesheet" href="designer.css">
+    <style>
+        body {
+            background: #f5f5f5;
+        }
+
+        .top-nav {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-nav h2 {
+            color: var(--primary-color);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            color: var(--text-color);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .questionnaire-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .questionnaire-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .questionnaire-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #999;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 12px;
+        }
+
+        .card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-draft {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-published {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn-icon {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-icon:hover {
+            background: var(--light-gray);
+            border-color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            color: #999;
+            margin-bottom: 25px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <h2>🌾 Survey Designer</h2>
+        <div class="nav-tabs">
+            <button class="nav-tab active">MY QUESTIONNAIRES</button>
+            <button class="nav-tab">QUESTIONNAIRES SHARED WITH ME</button>
+            <button class="nav-tab">PUBLIC QUESTIONNAIRES</button>
+            <button class="nav-tab">CLASSIFICATIONS</button>
+            <button class="nav-tab" onclick="window.location.href='create.html'">CREATE NEW</button>
+        </div>
+        <div class="user-info">
+            <span id="userName">JYARUEL</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="page-header">
+            <h1>My Questionnaires</h1>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search questionnaires...">
+            <button class="btn btn-primary" onclick="window.location.href='create.html'">+ Create New</button>
+        </div>
+
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            Loading questionnaires...
+        </div>
+
+        <div id="questionnaireGrid" class="questionnaire-grid">
+            <!-- Questionnaires will be loaded here -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <h3>No Questionnaires Yet</h3>
+            <p>Get started by creating your first questionnaire</p>
+            <button class="btn btn-success" onclick="window.location.href='create.html'">+ Create New Questionnaire</button>
+        </div>
+    </div>
+
+    <script>
+        let allQuestionnaires = [];
+
+        // Load questionnaires on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadQuestionnaires();
+            
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                filterQuestionnaires(e.target.value);
+            });
+        });
+
+        async function loadQuestionnaires() {
+            const grid = document.getElementById('questionnaireGrid');
+            const loading = document.getElementById('loadingIndicator');
+            const emptyState = document.getElementById('emptyState');
+
+            loading.style.display = 'block';
+            grid.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/api/forms', { headers });
+
+                if (response.ok) {
+                    allQuestionnaires = await response.json();
+                } else {
+                    // Fallback to demo data
+                    allQuestionnaires = getDemoQuestionnaires();
+                }
+
+                loading.style.display = 'none';
+
+                if (allQuestionnaires.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    grid.style.display = 'grid';
+                    renderQuestionnaires(allQuestionnaires);
+                }
+
+            } catch (error) {
+                console.error('Error loading questionnaires:', error);
+                loading.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        function renderQuestionnaires(questionnaires) {
+            const grid = document.getElementById('questionnaireGrid');
+            grid.innerHTML = '';
+
+            questionnaires.forEach(q => {
+                const card = createQuestionnaireCard(q);
+                grid.appendChild(card);
+            });
+        }
+
+        function createQuestionnaireCard(questionnaire) {
+            const card = document.createElement('div');
+            card.className = 'questionnaire-card';
+            
+            const questionCount = questionnaire.question_count || (questionnaire.questions ? questionnaire.questions.length : 0);
+            const isPublished = questionnaire.published || false;
+            const updatedDate = questionnaire.updated_at ? new Date(questionnaire.updated_at).toLocaleDateString() : 'N/A';
+            const createdDate = questionnaire.created_at ? new Date(questionnaire.created_at).toLocaleDateString() : 'N/A';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">${questionnaire.title}</div>
+                        <span class="status-badge ${isPublished ? 'status-published' : 'status-draft'}">
+                            ${isPublished ? 'Published' : 'Draft'}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-description">
+                    ${questionnaire.description || 'No description provided'}
+                </div>
+                <div class="card-meta">
+                    <span>📝 ${questionCount} questions</span>
+                    <span>📅 Modified: ${updatedDate}</span>
+                </div>
+                <div class="card-meta">
+                    <span>👤 Created by: you</span>
+                    <span>📆 Created: ${createdDate}</span>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-icon" onclick="editQuestionnaire(${questionnaire.id})">✏️ Edit</button>
+                    <button class="btn-icon" onclick="duplicateQuestionnaire(${questionnaire.id})">📋 Duplicate</button>
+                    <button class="btn-icon" onclick="deleteQuestionnaire(${questionnaire.id}, '${questionnaire.title}')">🗑️ Delete</button>
+                </div>
+            `;
+
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.card-actions')) {
+                    editQuestionnaire(questionnaire.id);
+                }
+            });
+
+            return card;
+        }
+
+        function editQuestionnaire(id) {
+            window.location.href = `index.html?id=${id}`;
+        }
+
+        async function duplicateQuestionnaire(id) {
+            if (!confirm('Create a copy of this questionnaire?')) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // Get the original questionnaire
+                const response = await fetch(`/api/forms/${id}`, { headers });
+                if (!response.ok) throw new Error('Failed to load questionnaire');
+
+                const original = await response.json();
+
+                // Create a copy
+                const copy = {
+                    title: `${original.title} (Copy)`,
+                    description: original.description,
+                    questions: Array.isArray(original.questions) ? original.questions : JSON.parse(original.questions || '[]')
+                };
+
+                const createResponse = await fetch('/api/forms', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(copy)
+                });
+
+                if (!createResponse.ok) throw new Error('Failed to create copy');
+
+                alert('Questionnaire duplicated successfully!');
+                loadQuestionnaires();
+
+            } catch (error) {
+                console.error('Error duplicating:', error);
+                alert('Failed to duplicate questionnaire');
+            }
+        }
+
+        async function deleteQuestionnaire(id, title) {
+            if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(`/api/forms/${id}`, {
+                    method: 'DELETE',
+                    headers
+                });
+
+                if (!response.ok) throw new Error('Failed to delete');
+
+                alert('Questionnaire deleted successfully!');
+                loadQuestionnaires();
+
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('Failed to delete questionnaire');
+            }
+        }
+
+        function filterQuestionnaires(searchTerm) {
+            const filtered = allQuestionnaires.filter(q => 
+                q.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (q.description && q.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+            renderQuestionnaires(filtered);
+        }
+
+        function getDemoQuestionnaires() {
+            // Same demo data as in designer.js
+            return [
+                {
+                    id: 1,
+                    title: 'Agriculture census 2022 listing',
+                    description: 'Comprehensive agricultural census for 2022 data collection',
+                    questions: [],
+                    created_at: '2023-10-13T00:24:00Z',
+                    updated_at: '2025-02-01T21:43:00Z',
+                    question_count: 8,
+                    published: true
+                },
+                {
+                    id: 2,
+                    title: 'Census 2020 - Vanuatu',
+                    description: 'National census survey for Vanuatu 2020',
+                    questions: [],
+                    created_at: '2019-11-20T00:22:00Z',
+                    updated_at: '2025-09-08T20:22:00Z',
+                    question_count: 5,
+                    published: false
+                }
+            ];
+        }
+    </script>
+</body>
+
+</html>

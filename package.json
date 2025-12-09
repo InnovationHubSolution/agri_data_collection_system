@@ -10,6 +10,7 @@
         "server": "node server/index.js",
         "server:postgres": "node server/app.js",
         "init-db": "node server/init-db.js",
+        "seed": "node server/seed-questionnaires.js",
         "migrate": "node server/scripts/migrate-to-postgres.js",
         "start": "node server/app.js"
     },

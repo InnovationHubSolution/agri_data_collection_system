@@ -95,7 +95,7 @@ router.post('/change-password', authenticate, async (req, res) => {
 
         const user = await userOperations.getById(req.user.id);
         const isValid = await comparePassword(currentPassword, user.password);
-        
+
         if (!isValid) {
             return res.status(401).json({ error: 'Current password incorrect' });
         }

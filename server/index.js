@@ -711,6 +711,376 @@ app.get('/api/sync-logs', (req, res) => {
     }
 });
 
+// ==========================================
+// QUESTIONNAIRE DESIGNER API ROUTES
+// ==========================================
+
+const formsFile = path.join(dataDir, 'questionnaires.json');
+
+// Initialize questionnaires file
+if (!fs.existsSync(formsFile)) {
+    fs.writeFileSync(formsFile, JSON.stringify([], null, 2));
+}
+
+function readQuestionnaires() {
+    try {
+        const data = fs.readFileSync(formsFile, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading questionnaires:', error);
+        return [];
+    }
+}
+
+function writeQuestionnaires(questionnaires) {
+    try {
+        fs.writeFileSync(formsFile, JSON.stringify(questionnaires, null, 2));
+        return true;
+    } catch (error) {
+        console.error('Error writing questionnaires:', error);
+        return false;
+    }
+}
+
+// Get all questionnaires
+app.get('/api/forms', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        res.json({ 
+            success: true, 
+            data: questionnaires,
+            count: questionnaires.length 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch questionnaires' 
+        });
+    }
+});
+
+// Get single questionnaire by ID
+app.get('/api/forms/:id', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const form = questionnaires.find(f => f.id === parseInt(req.params.id));
+        
+        if (!form) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        res.json({ success: true, data: form });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch questionnaire' 
+        });
+    }
+});
+
+// Create new questionnaire
+app.post('/api/forms', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const newForm = {
+            id: questionnaires.length > 0 
+                ? Math.max(...questionnaires.map(f => f.id)) + 1 
+                : 1,
+            title: req.body.title || 'Untitled Questionnaire',
+            description: req.body.description || '',
+            questions: req.body.questions || [],
+            sections: req.body.sections || [],
+            settings: req.body.settings || {},
+            version: 1,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: req.body.createdBy || 'admin'
+        };
+        
+        questionnaires.push(newForm);
+        
+        if (writeQuestionnaires(questionnaires)) {
+            res.status(201).json({ 
+                success: true, 
+                data: newForm,
+                message: 'Questionnaire created successfully' 
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to save questionnaire' 
+            });
+        }
+    } catch (error) {
+        console.error('Create form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to create questionnaire' 
+        });
+    }
+});
+
+// Update questionnaire
+app.put('/api/forms/:id', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const index = questionnaires.findIndex(f => f.id === parseInt(req.params.id));
+        
+        if (index === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        const updatedForm = {
+            ...questionnaires[index],
+            title: req.body.title || questionnaires[index].title,
+            description: req.body.description !== undefined ? req.body.description : questionnaires[index].description,
+            questions: req.body.questions || questionnaires[index].questions,
+            sections: req.body.sections || questionnaires[index].sections,
+            settings: req.body.settings || questionnaires[index].settings,
+            version: (questionnaires[index].version || 1) + 1,
+            updatedAt: new Date().toISOString()
+        };
+        
+        questionnaires[index] = updatedForm;
+        
+        if (writeQuestionnaires(questionnaires)) {
+            res.json({ 
+                success: true, 
+                data: updatedForm,
+                message: 'Questionnaire updated successfully' 
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to save questionnaire' 
+            });
+        }
+    } catch (error) {
+        console.error('Update form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to update questionnaire' 
+        });
+    }
+});
+
+// Delete questionnaire
+app.delete('/api/forms/:id', (req, res) => {
+    try {
+        let questionnaires = readQuestionnaires();
+        const index = questionnaires.findIndex(f => f.id === parseInt(req.params.id));
+        
+        if (index === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        questionnaires.splice(index, 1);
+        
+        if (writeQuestionnaires(questionnaires)) {
+            res.json({ 
+                success: true, 
+                message: 'Questionnaire deleted successfully' 
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to delete questionnaire' 
+            });
+        }
+    } catch (error) {
+        console.error('Delete form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to delete questionnaire' 
+        });
+    }
+});
+
+// Publish questionnaire (change status to published)
+app.post('/api/forms/:id/publish', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const index = questionnaires.findIndex(f => f.id === parseInt(req.params.id));
+        
+        if (index === -1) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        questionnaires[index].status = 'published';
+        questionnaires[index].publishedAt = new Date().toISOString();
+        questionnaires[index].updatedAt = new Date().toISOString();
+        
+        if (writeQuestionnaires(questionnaires)) {
+            res.json({ 
+                success: true, 
+                data: questionnaires[index],
+                message: 'Questionnaire published successfully' 
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to publish questionnaire' 
+            });
+        }
+    } catch (error) {
+        console.error('Publish form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to publish questionnaire' 
+        });
+    }
+});
+
+// Duplicate questionnaire
+app.post('/api/forms/:id/duplicate', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const original = questionnaires.find(f => f.id === parseInt(req.params.id));
+        
+        if (!original) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        const duplicate = {
+            ...original,
+            id: Math.max(...questionnaires.map(f => f.id)) + 1,
+            title: `${original.title} (Copy)`,
+            status: 'draft',
+            version: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            publishedAt: null
+        };
+        
+        questionnaires.push(duplicate);
+        
+        if (writeQuestionnaires(questionnaires)) {
+            res.status(201).json({ 
+                success: true, 
+                data: duplicate,
+                message: 'Questionnaire duplicated successfully' 
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to duplicate questionnaire' 
+            });
+        }
+    } catch (error) {
+        console.error('Duplicate form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to duplicate questionnaire' 
+        });
+    }
+});
+
+// Validate questionnaire
+app.post('/api/forms/:id/validate', (req, res) => {
+    try {
+        const questionnaires = readQuestionnaires();
+        const form = questionnaires.find(f => f.id === parseInt(req.params.id));
+        
+        if (!form) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Questionnaire not found' 
+            });
+        }
+        
+        // Validation logic
+        const errors = [];
+        const warnings = [];
+        
+        // Check if form has questions
+        if (!form.questions || form.questions.length === 0) {
+            errors.push({
+                code: 'WB0001',
+                severity: 'error',
+                message: 'Questionnaire must have at least one question'
+            });
+        }
+        
+        // Validate each question
+        form.questions.forEach((q, index) => {
+            if (!q.variable || q.variable.trim() === '') {
+                errors.push({
+                    code: 'WB0004',
+                    severity: 'error',
+                    message: `Question ${index + 1}: Variable name is required`,
+                    questionId: q.id
+                });
+            }
+            
+            if (!q.text || q.text.trim() === '') {
+                errors.push({
+                    code: 'WB0054',
+                    severity: 'error',
+                    message: `Question ${index + 1}: Question text is required`,
+                    questionId: q.id
+                });
+            }
+            
+            // Check for duplicate variable names
+            const duplicates = form.questions.filter(other => 
+                other.variable === q.variable && other.id !== q.id
+            );
+            if (duplicates.length > 0) {
+                errors.push({
+                    code: 'WB0067',
+                    severity: 'error',
+                    message: `Variable '${q.variable}' is used multiple times`,
+                    questionId: q.id
+                });
+            }
+            
+            // Check categorical questions have options
+            if (['radio', 'checkbox', 'dropdown'].includes(q.type)) {
+                if (!q.options || q.options.length === 0) {
+                    errors.push({
+                        code: 'WB0113',
+                        severity: 'error',
+                        message: `Question ${index + 1}: Categorical questions must have at least one option`,
+                        questionId: q.id
+                    });
+                }
+            }
+        });
+        
+        res.json({
+            success: true,
+            isValid: errors.length === 0,
+            errors,
+            warnings,
+            message: errors.length === 0 
+                ? 'Questionnaire is valid' 
+                : `Found ${errors.length} error(s) and ${warnings.length} warning(s)`
+        });
+    } catch (error) {
+        console.error('Validate form error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to validate questionnaire' 
+        });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`\n${'='.repeat(60)}`);
@@ -728,6 +1098,15 @@ app.listen(PORT, () => {
     console.log(`\n   Dashboard:`);
     console.log(`   - GET  /api/dashboard         - Real-time dashboard data`);
     console.log(`   - GET  /api/sync-logs         - Sync history logs`);
+    console.log(`\n   Questionnaire Designer:`);
+    console.log(`   - GET    /api/forms           - List all questionnaires`);
+    console.log(`   - GET    /api/forms/:id       - Get questionnaire by ID`);
+    console.log(`   - POST   /api/forms           - Create new questionnaire`);
+    console.log(`   - PUT    /api/forms/:id       - Update questionnaire`);
+    console.log(`   - DELETE /api/forms/:id       - Delete questionnaire`);
+    console.log(`   - POST   /api/forms/:id/publish    - Publish questionnaire`);
+    console.log(`   - POST   /api/forms/:id/duplicate  - Duplicate questionnaire`);
+    console.log(`   - POST   /api/forms/:id/validate   - Validate questionnaire`);
     console.log(`\n   User Management:`);
     console.log(`   - GET    /api/users           - List all users`);
     console.log(`   - POST   /api/users           - Create new user`);

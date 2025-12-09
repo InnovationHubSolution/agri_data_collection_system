@@ -31,7 +31,7 @@ router.put('/profile', authenticate, async (req, res) => {
     try {
         const { fullName, email, phone } = req.body;
         const updates = {};
-        
+
         if (fullName) updates.full_name = fullName;
         if (email) updates.email = email;
         if (phone) updates.phone = phone;
