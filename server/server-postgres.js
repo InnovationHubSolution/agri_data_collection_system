@@ -84,6 +84,7 @@ if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true')
 // Serve static files
 app.use(express.static(path.join(__dirname, '..')));
 app.use('/dashboard', express.static(path.join(__dirname, '../dashboard')));
+app.use('/designer', express.static(path.join(__dirname, '../designer')));
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -93,6 +94,151 @@ app.get('/api/health', async (req, res) => {
         res.json({ status: 'healthy', database: 'connected', timestamp: new Date().toISOString() });
     } catch (error) {
         res.status(503).json({ status: 'unhealthy', error: error.message });
+    }
+});
+
+// ==================== FORM DESIGNER ENDPOINTS ====================
+
+// Get all form templates
+app.get('/api/forms', authenticate, async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        const result = await pool.query(`
+            SELECT id, title, description, created_by, created_at, updated_at,
+                   (SELECT COUNT(*) FROM jsonb_array_elements(questions)) as question_count
+            FROM form_templates
+            ORDER BY updated_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching forms:', error);
+        res.status(500).json({ error: 'Failed to fetch forms' });
+    }
+});
+
+// Get single form template
+app.get('/api/forms/:id', authenticate, async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        const result = await pool.query(
+            'SELECT * FROM form_templates WHERE id = $1',
+            [req.params.id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error fetching form:', error);
+        res.status(500).json({ error: 'Failed to fetch form' });
+    }
+});
+
+// Create new form template
+app.post('/api/forms', authenticate, async (req, res) => {
+    try {
+        const { title, description, questions } = req.body;
+        
+        if (!title || !questions || !Array.isArray(questions)) {
+            return res.status(400).json({ error: 'Title and questions array are required' });
+        }
+        
+        const { pool } = require('./database');
+        const result = await pool.query(`
+            INSERT INTO form_templates (title, description, questions, created_by, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, NOW(), NOW())
+            RETURNING *
+        `, [title, description || '', JSON.stringify(questions), req.user.id]);
+        
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error creating form:', error);
+        res.status(500).json({ error: 'Failed to create form' });
+    }
+});
+
+// Update form template
+app.put('/api/forms/:id', authenticate, async (req, res) => {
+    try {
+        const { title, description, questions } = req.body;
+        const { pool } = require('./database');
+        
+        const result = await pool.query(`
+            UPDATE form_templates
+            SET title = $1, description = $2, questions = $3, updated_at = NOW()
+            WHERE id = $4
+            RETURNING *
+        `, [title, description || '', JSON.stringify(questions), req.params.id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error updating form:', error);
+        res.status(500).json({ error: 'Failed to update form' });
+    }
+});
+
+// Delete form template
+app.delete('/api/forms/:id', authenticate, authorize(['admin', 'supervisor']), async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        const result = await pool.query(
+            'DELETE FROM form_templates WHERE id = $1 RETURNING id',
+            [req.params.id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+        
+        res.json({ message: 'Form deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting form:', error);
+        res.status(500).json({ error: 'Failed to delete form' });
+    }
+});
+
+// Publish form (make it available for mobile app)
+app.post('/api/forms/:id/publish', authenticate, authorize(['admin', 'supervisor']), async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        const result = await pool.query(`
+            UPDATE form_templates
+            SET published = true, published_at = NOW(), published_by = $1
+            WHERE id = $2
+            RETURNING *
+        `, [req.user.id, req.params.id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error publishing form:', error);
+        res.status(500).json({ error: 'Failed to publish form' });
+    }
+});
+
+// Get published forms (for mobile app)
+app.get('/api/forms/published/list', optionalAuth, async (req, res) => {
+    try {
+        const { pool } = require('./database');
+        const result = await pool.query(`
+            SELECT id, title, description, questions, published_at
+            FROM form_templates
+            WHERE published = true
+            ORDER BY published_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching published forms:', error);
+        res.status(500).json({ error: 'Failed to fetch published forms' });
     }
 });
 
@@ -544,16 +690,17 @@ async function startServer() {
                 phone: null,
                 active: true
             });
-            console.log(`✅ Created default admin user (username: ${process.env.DEFAULT_ADMIN_USERNAME || 'admin'}, password: ${defaultPassword})');
-            console.log('⚠️  CHANGE DEFAULT PASSWORD IMMEDIATELY!');
+            console.log('Created default admin user (username: ' + (process.env.DEFAULT_ADMIN_USERNAME || 'admin') + ', password: ' + defaultPassword + ')');
+            console.log('WARNING: CHANGE DEFAULT PASSWORD IMMEDIATELY!');
         }
 
         app.listen(PORT, () => {
-            console.log('\n🚀 Agriculture Data System (PostgreSQL) - Server Running');
-            console.log(`📍 Server: http://localhost:${PORT}`);
-            console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
-            console.log(`📱 Mobile App: http://localhost:${PORT}`);
-            console.log('\n📡 API Endpoints:');
+            console.log('\nAgriculture Data System (PostgreSQL) - Server Running');
+            console.log('Server: http://localhost:' + PORT);
+            console.log('Dashboard: http://localhost:' + PORT + '/dashboard');
+            console.log('Designer: http://localhost:' + PORT + '/designer');
+            console.log('Mobile App: http://localhost:' + PORT);
+            console.log('\nAPI Endpoints:');
             console.log('   Auth:');
             console.log('     POST   /api/auth/login');
             console.log('     GET    /api/auth/verify');
@@ -562,6 +709,14 @@ async function startServer() {
             console.log('     POST   /api/sync');
             console.log('     GET    /api/surveys');
             console.log('     GET    /api/surveys/nearby');
+            console.log('   Form Designer:');
+            console.log('     GET    /api/forms');
+            console.log('     POST   /api/forms');
+            console.log('     GET    /api/forms/:id');
+            console.log('     PUT    /api/forms/:id');
+            console.log('     DELETE /api/forms/:id');
+            console.log('     POST   /api/forms/:id/publish');
+            console.log('     GET    /api/forms/published/list');
             console.log('   Dashboard:');
             console.log('     GET    /api/dashboard');
             console.log('   User Management:');
@@ -574,15 +729,15 @@ async function startServer() {
             console.log('     GET    /api/sync-logs');
             console.log('   System:');
             console.log('     GET    /api/health');
-            console.log('\n🔒 Security Features Enabled:');
-            console.log('   ✓ bcrypt password hashing (cost factor: 12)');
-            console.log('   ✓ JWT access + refresh tokens');
-            console.log('   ✓ Input validation & sanitization');
-            console.log('   ✓ Helmet security headers');
-            console.log('   ✓ CORS protection');
-            console.log('   ✓ HTTPS redirect (production only)');
-            console.log('\n⚠️  Default Credentials: admin / admin123 (CHANGE IMMEDIATELY!)');
-            console.log('💡 Configure .env file for production settings\n');
+            console.log('\nSecurity Features Enabled:');
+            console.log('   - bcrypt password hashing (cost factor: 12)');
+            console.log('   - JWT access + refresh tokens');
+            console.log('   - Input validation & sanitization');
+            console.log('   - Helmet security headers');
+            console.log('   - CORS protection');
+            console.log('   - HTTPS redirect (production only)');
+            console.log('\nDefault Credentials: admin / Admin@123456 (CHANGE IMMEDIATELY!)');
+            console.log('Configure .env file for production settings\n');
         });
 
     } catch (error) {

@@ -28,7 +28,9 @@
         "express-validator": "^7.3.1",
         "helmet": "^8.1.0",
         "jsonwebtoken": "^9.0.3",
-        "leaflet": "^1.9.4"
+        "leaflet": "^1.9.4",
+        "pg": "^8.16.3",
+        "pg-format": "^1.0.4"
     },
     "devDependencies": {
         "vite": "^5.0.0"

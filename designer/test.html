@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Designer - Test Workflow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2e7d32;
+        }
+        h2 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #2e7d32;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.pending {
+            background: #ffa726;
+            color: white;
+        }
+        .status.pass {
+            background: #4caf50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        button {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1b5e20;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            background: #e8f5e9;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .link {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Survey Designer - Complete Workflow Test</h1>
+    
+    <div class="test-section">
+        <h2>1️⃣ Login Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Authenticate with admin credentials
+            <span class="status pending" id="status-login">Pending</span>
+        </div>
+        <button onclick="testLogin()">Run Login Test</button>
+        <div id="result-login"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2️⃣ Create Form Template Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Create a new survey form with sample questions
+            <span class="status pending" id="status-create">Pending</span>
+        </div>
+        <button onclick="testCreateForm()" id="btn-create" disabled>Run Create Form Test</button>
+        <div id="result-create"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3️⃣ List Forms Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Retrieve all form templates
+            <span class="status pending" id="status-list">Pending</span>
+        </div>
+        <button onclick="testListForms()" id="btn-list" disabled>Run List Forms Test</button>
+        <div id="result-list"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4️⃣ Update Form Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Update existing form template
+            <span class="status pending" id="status-update">Pending</span>
+        </div>
+        <button onclick="testUpdateForm()" id="btn-update" disabled>Run Update Form Test</button>
+        <div id="result-update"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5️⃣ Publish Form Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Publish form to make it available for mobile app
+            <span class="status pending" id="status-publish">Pending</span>
+        </div>
+        <button onclick="testPublishForm()" id="btn-publish" disabled>Run Publish Form Test</button>
+        <div id="result-publish"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6️⃣ Get Published Forms Test</h2>
+        <div class="step">
+            <strong>Test:</strong> Retrieve published forms (mobile app endpoint)
+            <span class="status pending" id="status-published">Pending</span>
+        </div>
+        <button onclick="testGetPublishedForms()" id="btn-published" disabled>Run Get Published Forms Test</button>
+        <div id="result-published"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Manual Test</h2>
+        <p>After automated tests pass, manually test the designer interface:</p>
+        <a href="/designer/index.html" class="link" target="_blank">Open Survey Designer →</a>
+        <br><br>
+        <strong>Manual Test Checklist:</strong>
+        <ul>
+            <li>✓ Drag and drop question types to canvas</li>
+            <li>✓ Edit question labels and properties</li>
+            <li>✓ Add options to radio/checkbox/dropdown questions</li>
+            <li>✓ Configure skip logic (conditional display)</li>
+            <li>✓ Preview form</li>
+            <li>✓ Save form (Ctrl+S)</li>
+            <li>✓ Load saved forms</li>
+            <li>✓ Publish form</li>
+            <li>✓ Reorder questions with up/down arrows</li>
+            <li>✓ Delete questions</li>
+        </ul>
+    </div>
+
+    <script>
+        let authToken = null;
+        let createdFormId = null;
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('result-login');
+            const statusSpan = document.getElementById('status-login');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'Admin@123456'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.accessToken) {
+                    authToken = data.accessToken;
+                    localStorage.setItem('authToken', authToken);
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Login Successful</strong>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    // Enable next test
+                    document.getElementById('btn-create').disabled = false;
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateForm() {
+            const resultDiv = document.getElementById('result-create');
+            const statusSpan = document.getElementById('status-create');
+            
+            try {
+                const sampleForm = {
+                    title: 'Test Farm Survey - ' + new Date().toLocaleString(),
+                    description: 'Automated test survey created for testing Survey Designer functionality',
+                    questions: [
+                        {
+                            id: 'q1',
+                            type: 'text',
+                            label: 'Farmer Name',
+                            required: true,
+                            validation: {},
+                            skipLogic: null
+                        },
+                        {
+                            id: 'q2',
+                            type: 'dropdown',
+                            label: 'Island',
+                            required: true,
+                            options: ['Efate', 'Tanna', 'Santo', 'Malekula'],
+                            skipLogic: null
+                        },
+                        {
+                            id: 'q3',
+                            type: 'number',
+                            label: 'Farm Size (hectares)',
+                            required: true,
+                            validation: { min: 0.1, max: 10000 },
+                            skipLogic: null
+                        },
+                        {
+                            id: 'q4',
+                            type: 'checkbox',
+                            label: 'Crops Grown',
+                            required: false,
+                            options: ['Kava', 'Copra', 'Coffee', 'Cocoa', 'Vegetables'],
+                            skipLogic: null
+                        },
+                        {
+                            id: 'q5',
+                            type: 'gps',
+                            label: 'Farm Location',
+                            required: true,
+                            validation: {},
+                            skipLogic: null
+                        }
+                    ]
+                };
+
+                const response = await fetch('/api/forms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(sampleForm)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    createdFormId = data.id;
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Form Created Successfully</strong>
+                            <p>Form ID: ${data.id}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    // Enable next tests
+                    document.getElementById('btn-list').disabled = false;
+                    document.getElementById('btn-update').disabled = false;
+                    document.getElementById('btn-publish').disabled = false;
+                } else {
+                    throw new Error(data.error || 'Failed to create form');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testListForms() {
+            const resultDiv = document.getElementById('result-list');
+            const statusSpan = document.getElementById('status-list');
+            
+            try {
+                const response = await fetch('/api/forms', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Forms Retrieved Successfully</strong>
+                            <p>Total forms: ${data.length}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to list forms');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testUpdateForm() {
+            const resultDiv = document.getElementById('result-update');
+            const statusSpan = document.getElementById('status-update');
+            
+            try {
+                const updatedForm = {
+                    title: 'Updated Test Farm Survey - ' + new Date().toLocaleString(),
+                    description: 'This form has been updated to test the update functionality',
+                    questions: [
+                        {
+                            id: 'q1',
+                            type: 'text',
+                            label: 'Farmer Full Name (Updated)',
+                            required: true,
+                            validation: {},
+                            skipLogic: null
+                        },
+                        {
+                            id: 'q2',
+                            type: 'radio',
+                            label: 'Primary Crop',
+                            required: true,
+                            options: ['Kava', 'Copra', 'Coffee', 'Other'],
+                            skipLogic: null
+                        }
+                    ]
+                };
+
+                const response = await fetch(`/api/forms/${createdFormId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(updatedForm)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Form Updated Successfully</strong>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to update form');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testPublishForm() {
+            const resultDiv = document.getElementById('result-publish');
+            const statusSpan = document.getElementById('status-publish');
+            
+            try {
+                const response = await fetch(`/api/forms/${createdFormId}/publish`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Form Published Successfully</strong>
+                            <p>Published at: ${new Date(data.published_at).toLocaleString()}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    // Enable published forms test
+                    document.getElementById('btn-published').disabled = false;
+                } else {
+                    throw new Error(data.error || 'Failed to publish form');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testGetPublishedForms() {
+            const resultDiv = document.getElementById('result-published');
+            const statusSpan = document.getElementById('status-published');
+            
+            try {
+                const response = await fetch('/api/forms/published/list');
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusSpan.className = 'status pass';
+                    statusSpan.textContent = 'PASS';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <strong>✓ Published Forms Retrieved Successfully</strong>
+                            <p>Total published forms: ${data.length}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to get published forms');
+                }
+            } catch (error) {
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = 'FAIL';
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

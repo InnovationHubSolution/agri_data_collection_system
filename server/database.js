@@ -40,6 +40,30 @@ async function initializeDatabase() {
             );
         `);
 
+        // Form templates table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS form_templates (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                questions JSONB NOT NULL DEFAULT '[]',
+                created_by VARCHAR(50) REFERENCES users(id),
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                published BOOLEAN DEFAULT false,
+                published_at TIMESTAMP,
+                published_by VARCHAR(50) REFERENCES users(id)
+            );
+        `);
+
+        // Add indexes for form templates
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_form_templates_published ON form_templates(published);
+            CREATE INDEX IF NOT EXISTS idx_form_templates_created_at ON form_templates(created_at);
+            CREATE INDEX IF NOT EXISTS idx_form_templates_updated_at ON form_templates(updated_at);
+            CREATE INDEX IF NOT EXISTS idx_form_templates_created_by ON form_templates(created_by);
+        `);
+
         // Surveys table with PostGIS geometry
         await client.query(`
             CREATE TABLE IF NOT EXISTS surveys (

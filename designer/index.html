@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Designer - Agriculture Data System</title>
+    <link rel="stylesheet" href="designer.css">
+</head>
+<body>
+    <div class="designer-container">
+        <!-- Header -->
+        <header class="designer-header">
+            <div class="header-left">
+                <h1>📋 Survey Designer</h1>
+                <span class="form-name" id="formName">Untitled Survey</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="previewForm()">👁️ Preview</button>
+                <button class="btn btn-secondary" onclick="loadForm()">📂 Load</button>
+                <button class="btn btn-primary" onclick="saveForm()">💾 Save</button>
+                <button class="btn btn-success" onclick="publishForm()">🚀 Publish</button>
+            </div>
+        </header>
+
+        <!-- Main Designer Area -->
+        <div class="designer-main">
+            <!-- Left Sidebar - Question Types Palette -->
+            <aside class="designer-sidebar">
+                <h3>Question Types</h3>
+                <div class="question-palette">
+                    <!-- Basic Input Types -->
+                    <div class="palette-section">
+                        <h4>Basic</h4>
+                        <div class="question-type" draggable="true" data-type="text">
+                            <span class="icon">📝</span>
+                            <span class="label">Text Input</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="number">
+                            <span class="icon">🔢</span>
+                            <span class="label">Number</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="date">
+                            <span class="icon">📅</span>
+                            <span class="label">Date</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="textarea">
+                            <span class="icon">📄</span>
+                            <span class="label">Long Text</span>
+                        </div>
+                    </div>
+
+                    <!-- Selection Types -->
+                    <div class="palette-section">
+                        <h4>Selection</h4>
+                        <div class="question-type" draggable="true" data-type="radio">
+                            <span class="icon">⭕</span>
+                            <span class="label">Single Choice</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="checkbox">
+                            <span class="icon">☑️</span>
+                            <span class="label">Multiple Choice</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="dropdown">
+                            <span class="icon">▼</span>
+                            <span class="label">Dropdown</span>
+                        </div>
+                    </div>
+
+                    <!-- Location & Media -->
+                    <div class="palette-section">
+                        <h4>Location & Media</h4>
+                        <div class="question-type" draggable="true" data-type="gps">
+                            <span class="icon">📍</span>
+                            <span class="label">GPS Location</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="photo">
+                            <span class="icon">📷</span>
+                            <span class="label">Photo Capture</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="signature">
+                            <span class="icon">✍️</span>
+                            <span class="label">Signature</span>
+                        </div>
+                    </div>
+
+                    <!-- Advanced -->
+                    <div class="palette-section">
+                        <h4>Advanced</h4>
+                        <div class="question-type" draggable="true" data-type="calculated">
+                            <span class="icon">🧮</span>
+                            <span class="label">Calculated Field</span>
+                        </div>
+                        <div class="question-type" draggable="true" data-type="section">
+                            <span class="icon">📑</span>
+                            <span class="label">Section Header</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center - Form Canvas -->
+            <main class="form-canvas">
+                <div class="canvas-header">
+                    <input type="text" id="surveyTitle" class="survey-title-input" 
+                           placeholder="Enter survey title..." value="Farm Household Survey">
+                    <textarea id="surveyDescription" class="survey-description-input" 
+                              placeholder="Enter survey description...">Collect information about farm households, crops, and livestock.</textarea>
+                </div>
+
+                <div id="formBuilder" class="form-builder">
+                    <div class="drop-zone">
+                        <p class="drop-zone-text">Drag question types here to build your survey</p>
+                    </div>
+                </div>
+
+                <button class="btn btn-add-question" onclick="showQuestionModal()">+ Add Question</button>
+            </main>
+
+            <!-- Right Sidebar - Question Properties -->
+            <aside class="properties-panel" id="propertiesPanel">
+                <h3>Question Properties</h3>
+                <div class="no-selection">
+                    <p>Select a question to edit its properties</p>
+                </div>
+                <div class="properties-form" id="propertiesForm" style="display: none;">
+                    <!-- Populated dynamically when question selected -->
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closePreview()">&times;</span>
+            <h2>Survey Preview</h2>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <!-- Load Survey Modal -->
+    <div id="loadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoad()">&times;</span>
+            <h2>Load Survey Template</h2>
+            <div id="surveyList"></div>
+        </div>
+    </div>
+
+    <!-- Question Options Modal -->
+    <div id="optionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOptionsModal()">&times;</span>
+            <h2>Edit Options</h2>
+            <div id="optionsEditor">
+                <div class="options-list" id="optionsList"></div>
+                <button class="btn btn-secondary" onclick="addOption()">+ Add Option</button>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="saveOptions()">Save</button>
+                    <button class="btn btn-secondary" onclick="closeOptionsModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skip Logic Modal -->
+    <div id="skipLogicModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSkipLogic()">&times;</span>
+            <h2>Skip Logic</h2>
+            <div id="skipLogicEditor">
+                <div class="logic-rule">
+                    <label>Show this question when:</label>
+                    <select id="skipLogicQuestion" class="form-control">
+                        <option value="">Select question...</option>
+                    </select>
+                    <select id="skipLogicOperator" class="form-control">
+                        <option value="equals">equals</option>
+                        <option value="not_equals">does not equal</option>
+                        <option value="contains">contains</option>
+                        <option value="greater_than">is greater than</option>
+                        <option value="less_than">is less than</option>
+                    </select>
+                    <input type="text" id="skipLogicValue" class="form-control" placeholder="Value...">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="saveSkipLogic()">Save</button>
+                    <button class="btn btn-secondary" onclick="clearSkipLogic()">Clear</button>
+                    <button class="btn btn-secondary" onclick="closeSkipLogic()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="designer.js"></script>
+</body>
+</html>
