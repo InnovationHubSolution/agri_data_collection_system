@@ -106,12 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeDragAndDrop() {
     const questionTypes = document.querySelectorAll('.question-type');
     const dropZone = document.getElementById('dropZone');
-    
+
     questionTypes.forEach(type => {
         type.addEventListener('dragstart', handleDragStart);
         type.addEventListener('dragend', handleDragEnd);
     });
-    
+
     dropZone.addEventListener('dragover', handleDragOver);
     dropZone.addEventListener('drop', handleDrop);
     dropZone.addEventListener('dragleave', handleDragLeave);
@@ -124,40 +124,40 @@ function initializeEventListeners() {
         formData.title = e.target.value || 'Untitled Survey';
         updateFormName();
     });
-    
+
     document.getElementById('surveyDescription').addEventListener('input', (e) => {
         formData.description = e.target.value;
     });
-    
+
     // Header Actions
     document.getElementById('previewBtn').addEventListener('click', previewForm);
     document.getElementById('loadBtn').addEventListener('click', loadForm);
     document.getElementById('saveBtn').addEventListener('click', saveForm);
     document.getElementById('publishBtn').addEventListener('click', publishForm);
-    
+
     // Add Question Button
     document.getElementById('addQuestionBtn').addEventListener('click', () => {
         // This would open a dialog to select question type
         alert('Select a question type from the left palette and drag it to the canvas');
     });
-    
+
     // Properties Panel Events
     document.getElementById('questionLabel').addEventListener('input', updateSelectedQuestion);
     document.getElementById('questionRequired').addEventListener('change', updateSelectedQuestion);
     document.getElementById('editOptionsBtn').addEventListener('click', editOptions);
     document.getElementById('editSkipLogicBtn').addEventListener('click', editSkipLogic);
-    
+
     // Modal Close Events
     document.querySelectorAll('.close').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.target.closest('.modal').style.display = 'none';
         });
     });
-    
+
     // Options Modal
     document.getElementById('addOptionBtn').addEventListener('click', addOption);
     document.getElementById('saveOptionsBtn').addEventListener('click', saveOptions);
-    
+
     // Skip Logic Modal
     document.getElementById('saveSkipLogicBtn').addEventListener('click', saveSkipLogic);
 }
@@ -187,7 +187,7 @@ function handleDragLeave(e) {
 function handleDrop(e) {
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
-    
+
     const questionType = e.dataTransfer.getData('questionType');
     if (questionType) {
         addQuestion(questionType);
@@ -201,7 +201,7 @@ function addQuestion(type) {
         id: `q${nextQuestionId++}`,
         ...template
     };
-    
+
     formData.questions.push(question);
     renderQuestions();
     selectQuestion(question.id);
@@ -209,12 +209,12 @@ function addQuestion(type) {
 
 function renderQuestions() {
     const dropZone = document.getElementById('dropZone');
-    
+
     if (formData.questions.length === 0) {
         dropZone.innerHTML = '<p class="drop-zone-text">Drag and drop question types here to build your survey</p>';
         return;
     }
-    
+
     dropZone.innerHTML = '';
     formData.questions.forEach((question, index) => {
         const questionEl = createQuestionElement(question, index);
@@ -232,7 +232,7 @@ function createQuestionElement(question, index) {
     if (question.skipLogic) {
         div.classList.add('has-skip-logic');
     }
-    
+
     div.innerHTML = `
         <div class="question-header">
             <div>
@@ -251,9 +251,9 @@ function createQuestionElement(question, index) {
             ${renderQuestionPreview(question)}
         </div>
     `;
-    
+
     div.addEventListener('click', () => selectQuestion(question.id));
-    
+
     return div;
 }
 
@@ -315,16 +315,16 @@ function deleteQuestion(questionId) {
 
 function moveQuestionUp(index) {
     if (index > 0) {
-        [formData.questions[index], formData.questions[index - 1]] = 
-        [formData.questions[index - 1], formData.questions[index]];
+        [formData.questions[index], formData.questions[index - 1]] =
+            [formData.questions[index - 1], formData.questions[index]];
         renderQuestions();
     }
 }
 
 function moveQuestionDown(index) {
     if (index < formData.questions.length - 1) {
-        [formData.questions[index], formData.questions[index + 1]] = 
-        [formData.questions[index + 1], formData.questions[index]];
+        [formData.questions[index], formData.questions[index + 1]] =
+            [formData.questions[index + 1], formData.questions[index]];
         renderQuestions();
     }
 }
@@ -333,45 +333,45 @@ function moveQuestionDown(index) {
 function updatePropertiesPanel() {
     const panel = document.getElementById('propertiesForm');
     const noSelection = document.getElementById('noSelection');
-    
+
     if (!selectedQuestionId) {
         panel.style.display = 'none';
         noSelection.style.display = 'block';
         return;
     }
-    
+
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     panel.style.display = 'flex';
     noSelection.style.display = 'none';
-    
+
     document.getElementById('questionLabel').value = question.label;
     document.getElementById('questionRequired').checked = question.required || false;
-    
+
     // Show/hide options button for radio, checkbox, dropdown
     const optionsBtn = document.getElementById('editOptionsBtn');
     const skipLogicBtn = document.getElementById('editSkipLogicBtn');
-    
+
     if (['radio', 'checkbox', 'dropdown'].includes(question.type)) {
         optionsBtn.style.display = 'block';
     } else {
         optionsBtn.style.display = 'none';
     }
-    
+
     // Skip logic available for all except section headers
     skipLogicBtn.style.display = question.type !== 'section' ? 'block' : 'none';
 }
 
 function updateSelectedQuestion() {
     if (!selectedQuestionId) return;
-    
+
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     question.label = document.getElementById('questionLabel').value;
     question.required = document.getElementById('questionRequired').checked;
-    
+
     renderQuestions();
 }
 
@@ -379,10 +379,10 @@ function updateSelectedQuestion() {
 function editOptions() {
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     const modal = document.getElementById('optionsModal');
     const optionsList = document.getElementById('optionsList');
-    
+
     optionsList.innerHTML = '';
     question.options.forEach((option, index) => {
         const div = document.createElement('div');
@@ -393,14 +393,14 @@ function editOptions() {
         `;
         optionsList.appendChild(div);
     });
-    
+
     modal.style.display = 'block';
 }
 
 function addOption() {
     const optionsList = document.getElementById('optionsList');
     const index = optionsList.children.length;
-    
+
     const div = document.createElement('div');
     div.className = 'option-input-group';
     div.innerHTML = `
@@ -419,14 +419,14 @@ function removeOption(index) {
 function saveOptions() {
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     const optionsList = document.getElementById('optionsList');
     const inputs = optionsList.querySelectorAll('input');
-    
+
     question.options = Array.from(inputs)
         .map(input => input.value.trim())
         .filter(val => val !== '');
-    
+
     document.getElementById('optionsModal').style.display = 'none';
     renderQuestions();
 }
@@ -435,10 +435,10 @@ function saveOptions() {
 function editSkipLogic() {
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     const modal = document.getElementById('skipLogicModal');
     const questionSelect = document.getElementById('skipLogicQuestion');
-    
+
     // Populate question dropdown (only questions before current one)
     questionSelect.innerHTML = '<option value="">Select a question...</option>';
     const currentIndex = formData.questions.findIndex(q => q.id === selectedQuestionId);
@@ -447,7 +447,7 @@ function editSkipLogic() {
             questionSelect.innerHTML += `<option value="${q.id}">${q.label}</option>`;
         }
     });
-    
+
     // Load existing skip logic
     if (question.skipLogic) {
         document.getElementById('skipLogicQuestion').value = question.skipLogic.questionId;
@@ -458,24 +458,24 @@ function editSkipLogic() {
         document.getElementById('skipLogicOperator').value = 'equals';
         document.getElementById('skipLogicValue').value = '';
     }
-    
+
     modal.style.display = 'block';
 }
 
 function saveSkipLogic() {
     const question = formData.questions.find(q => q.id === selectedQuestionId);
     if (!question) return;
-    
+
     const questionId = document.getElementById('skipLogicQuestion').value;
     const operator = document.getElementById('skipLogicOperator').value;
     const value = document.getElementById('skipLogicValue').value;
-    
+
     if (questionId && value) {
         question.skipLogic = { questionId, operator, value };
     } else {
         question.skipLogic = null;
     }
-    
+
     document.getElementById('skipLogicModal').style.display = 'none';
     renderQuestions();
 }
@@ -488,12 +488,12 @@ function updateFormName() {
 async function previewForm() {
     const modal = document.getElementById('previewModal');
     const previewContent = document.getElementById('previewContent');
-    
+
     let html = `<h2>${formData.title}</h2>`;
     if (formData.description) {
         html += `<p>${formData.description}</p>`;
     }
-    
+
     formData.questions.forEach(question => {
         if (question.type === 'section') {
             html += `<h3 style="margin-top: 30px;">${question.label}</h3>`;
@@ -509,7 +509,7 @@ async function previewForm() {
             html += `</div>`;
         }
     });
-    
+
     previewContent.innerHTML = html;
     modal.style.display = 'block';
 }
@@ -522,12 +522,12 @@ async function saveForm() {
             return;
         }
 
-        const url = formData.id 
+        const url = formData.id
             ? `/api/forms/${formData.id}`
             : '/api/forms';
-        
+
         const method = formData.id ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -579,7 +579,7 @@ async function loadForm() {
         const forms = await response.json();
         const modal = document.getElementById('loadModal');
         const surveyList = document.getElementById('surveyList');
-        
+
         if (forms.length === 0) {
             surveyList.innerHTML = '<p class="empty-state">No saved surveys found. Create a new survey to get started.</p>';
         } else {
@@ -602,7 +602,7 @@ async function loadForm() {
                 surveyList.appendChild(div);
             });
         }
-        
+
         modal.style.display = 'block';
     } catch (error) {
         console.error('Error loading forms:', error);
@@ -632,7 +632,7 @@ async function loadFormById(id) {
             created_at: form.created_at,
             updated_at: form.updated_at
         };
-        
+
         nextQuestionId = Math.max(...formData.questions.map(q => parseInt(q.id.substring(1)) || 0), 0) + 1;
         document.getElementById('surveyTitle').value = formData.title;
         document.getElementById('surveyDescription').value = formData.description;
@@ -650,7 +650,7 @@ async function publishForm() {
         alert('Cannot publish an empty survey. Please add at least one question.');
         return;
     }
-    
+
     if (!formData.id) {
         alert('Please save the survey before publishing.');
         return;
@@ -687,7 +687,7 @@ function showSuccessMessage(message) {
     div.className = 'success-message';
     div.textContent = message;
     document.body.appendChild(div);
-    
+
     setTimeout(() => {
         div.remove();
     }, 3000);
@@ -707,7 +707,7 @@ document.addEventListener('keydown', (e) => {
                 break;
         }
     }
-    
+
     if (e.key === 'Delete' && selectedQuestionId) {
         deleteQuestion(selectedQuestionId);
     }

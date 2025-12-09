@@ -154,6 +154,25 @@ async function initializeDatabase() {
             );
         `);
 
+        // Create settings table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                global_note JSONB DEFAULT '{"message": "", "enabled": false}',
+                web_interview JSONB DEFAULT '{"enabled": false, "url": "", "sessionTimeout": 30, "allowAnonymous": false, "requireEmail": false}',
+                company_logo TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT single_row CHECK (id = 1)
+            );
+        `);
+
+        // Insert default settings
+        await client.query(`
+            INSERT INTO settings (id, global_note, web_interview)
+            VALUES (1, '{"message": "", "enabled": false}', '{"enabled": false, "url": "", "sessionTimeout": 30, "allowAnonymous": false, "requireEmail": false}')
+            ON CONFLICT (id) DO NOTHING;
+        `);
+
         // Create updated_at trigger function
         await client.query(`
             CREATE OR REPLACE FUNCTION update_updated_at_column()

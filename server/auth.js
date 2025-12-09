@@ -63,7 +63,7 @@ function verifyToken(token) {
 function refreshAccessToken(refreshToken) {
     try {
         const decoded = jwt.verify(refreshToken, JWT_SECRET);
-        
+
         if (decoded.type !== 'refresh') {
             return null;
         }

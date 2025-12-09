@@ -8,7 +8,7 @@ let sortColumn = 'updated_at';
 let sortDirection = 'desc';
 
 // Load interviews on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkAuthentication();
     loadInterviews();
 });
@@ -37,7 +37,7 @@ function logout() {
 async function loadInterviews() {
     const token = localStorage.getItem('token');
     const tableContainer = document.getElementById('tableContainer');
-    
+
     try {
         tableContainer.innerHTML = '<div class="loading">Loading interviews</div>';
 
@@ -53,13 +53,13 @@ async function loadInterviews() {
 
         const data = await response.json();
         allInterviews = data.interviews || [];
-        
+
         // Populate filter dropdowns
         populateFilters(data);
-        
+
         // Initial filter and render
         filterInterviews();
-        
+
     } catch (error) {
         console.error('Error loading interviews:', error);
         tableContainer.innerHTML = `
@@ -127,7 +127,7 @@ function filterInterviews() {
         if (responsibleFilter && interview.responsible !== responsibleFilter) return false;
         if (assignmentFilter && interview.assignment !== assignmentFilter) return false;
         if (modeFilter && interview.interview_mode !== modeFilter) return false;
-        
+
         if (searchTerm) {
             const searchableText = [
                 interview.interview_key,
@@ -135,7 +135,7 @@ function filterInterviews() {
                 interview.responsible,
                 interview.questionnaire_title
             ].join(' ').toLowerCase();
-            
+
             if (!searchableText.includes(searchTerm)) return false;
         }
 
@@ -165,7 +165,7 @@ function clearFilters() {
 function renderTable() {
     const tableContainer = document.getElementById('tableContainer');
     const interviewCount = document.getElementById('interviewCount');
-    
+
     interviewCount.textContent = filteredInterviews.length;
 
     if (filteredInterviews.length === 0) {
@@ -288,11 +288,11 @@ function updatePagination(start, end, total) {
     // Generate page numbers
     const pageNumbers = document.getElementById('pageNumbers');
     let html = '';
-    
+
     const maxButtons = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
     let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-    
+
     if (endPage - startPage < maxButtons - 1) {
         startPage = Math.max(1, endPage - maxButtons + 1);
     }
@@ -355,20 +355,20 @@ function viewInterview(interviewId) {
 
 async function exportInterviews() {
     const token = localStorage.getItem('token');
-    
+
     // Get current filters
     const params = new URLSearchParams();
-    
+
     const questionnaireFilter = document.getElementById('filterQuestionnaire').value;
     const statusFilter = document.getElementById('filterStatus').value;
     const responsibleFilter = document.getElementById('filterResponsible').value;
     const modeFilter = document.getElementById('filterMode').value;
-    
+
     if (questionnaireFilter) params.append('questionnaire', questionnaireFilter);
     if (statusFilter) params.append('status', statusFilter);
     if (responsibleFilter) params.append('responsible', responsibleFilter);
     if (modeFilter) params.append('mode', modeFilter);
-    
+
     params.append('format', 'csv');
 
     try {

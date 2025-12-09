@@ -46,15 +46,15 @@ app.use(helmet({
 }));
 
 // CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN 
+const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',')
     : ['http://localhost:5173', 'http://localhost:3000'];
 
 app.use(cors({
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
         // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
-        
+
         if (allowedOrigins.indexOf(origin) === -1) {
             return callback(new Error('CORS policy violation'), false);
         }
@@ -124,11 +124,11 @@ app.get('/api/forms/:id', authenticate, async (req, res) => {
             'SELECT * FROM form_templates WHERE id = $1',
             [req.params.id]
         );
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Form not found' });
         }
-        
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error fetching form:', error);
@@ -140,18 +140,18 @@ app.get('/api/forms/:id', authenticate, async (req, res) => {
 app.post('/api/forms', authenticate, async (req, res) => {
     try {
         const { title, description, questions } = req.body;
-        
+
         if (!title || !questions || !Array.isArray(questions)) {
             return res.status(400).json({ error: 'Title and questions array are required' });
         }
-        
+
         const { pool } = require('./database');
         const result = await pool.query(`
             INSERT INTO form_templates (title, description, questions, created_by, created_at, updated_at)
             VALUES ($1, $2, $3, $4, NOW(), NOW())
             RETURNING *
         `, [title, description || '', JSON.stringify(questions), req.user.id]);
-        
+
         res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error creating form:', error);
@@ -164,18 +164,18 @@ app.put('/api/forms/:id', authenticate, async (req, res) => {
     try {
         const { title, description, questions } = req.body;
         const { pool } = require('./database');
-        
+
         const result = await pool.query(`
             UPDATE form_templates
             SET title = $1, description = $2, questions = $3, updated_at = NOW()
             WHERE id = $4
             RETURNING *
         `, [title, description || '', JSON.stringify(questions), req.params.id]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Form not found' });
         }
-        
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error updating form:', error);
@@ -191,11 +191,11 @@ app.delete('/api/forms/:id', authenticate, authorize(['admin', 'supervisor']), a
             'DELETE FROM form_templates WHERE id = $1 RETURNING id',
             [req.params.id]
         );
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Form not found' });
         }
-        
+
         res.json({ message: 'Form deleted successfully' });
     } catch (error) {
         console.error('Error deleting form:', error);
@@ -213,11 +213,11 @@ app.post('/api/forms/:id/publish', authenticate, authorize(['admin', 'supervisor
             WHERE id = $2
             RETURNING *
         `, [req.user.id, req.params.id]);
-        
+
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Form not found' });
         }
-        
+
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error publishing form:', error);
@@ -248,7 +248,7 @@ app.get('/api/forms/published/list', optionalAuth, async (req, res) => {
 app.get('/api/reports/surveys-statuses', authenticate, async (req, res) => {
     try {
         const { pool } = require('./database');
-        
+
         // Get survey statistics grouped by form template or default
         const surveysResult = await pool.query(`
             SELECT 
@@ -267,7 +267,7 @@ app.get('/api/reports/surveys-statuses', authenticate, async (req, res) => {
             GROUP BY ft.id, ft.title
             ORDER BY questionnaire_title
         `);
-        
+
         // Get list of supervisors
         const supervisorsResult = await pool.query(`
             SELECT id, username, full_name
@@ -275,7 +275,7 @@ app.get('/api/reports/surveys-statuses', authenticate, async (req, res) => {
             WHERE role = 'supervisor'
             ORDER BY full_name, username
         `);
-        
+
         // Get list of survey templates
         const templatesResult = await pool.query(`
             SELECT id, title
@@ -283,7 +283,7 @@ app.get('/api/reports/surveys-statuses', authenticate, async (req, res) => {
             WHERE published = true
             ORDER BY title
         `);
-        
+
         res.json({
             surveys: surveysResult.rows,
             supervisors: supervisorsResult.rows.map(s => ({
@@ -304,7 +304,7 @@ app.get('/api/reports/surveys-statuses/export', authenticate, async (req, res) =
     try {
         const { format, supervisor, survey } = req.query;
         const { pool } = require('./database');
-        
+
         // Build query with filters
         let query = `
             SELECT 
@@ -321,7 +321,7 @@ app.get('/api/reports/surveys-statuses/export', authenticate, async (req, res) =
             LEFT JOIN form_templates ft ON s.form_template_id = ft.id
             WHERE 1=1
         `;
-        
+
         const params = [];
         if (supervisor) {
             params.push(supervisor);
@@ -331,17 +331,17 @@ app.get('/api/reports/surveys-statuses/export', authenticate, async (req, res) =
             params.push(survey);
             query += ` AND s.form_template_id = $${params.length}`;
         }
-        
+
         query += ' GROUP BY ft.title ORDER BY questionnaire_title';
-        
+
         const result = await pool.query(query, params);
-        
+
         // Generate export based on format
         if (format === 'csv' || format === 'tab') {
             const delimiter = format === 'csv' ? ',' : '\t';
-            const headers = ['Questionnaire Title', 'Supervisor Assigned', 'Interviewer Assigned', 'Completed', 
-                           'Rejected by Supervisor', 'Approved by Supervisor', 'Rejected by HQ', 'Approved by HQ', 'Total'];
-            
+            const headers = ['Questionnaire Title', 'Supervisor Assigned', 'Interviewer Assigned', 'Completed',
+                'Rejected by Supervisor', 'Approved by Supervisor', 'Rejected by HQ', 'Approved by HQ', 'Total'];
+
             let content = headers.join(delimiter) + '\n';
             result.rows.forEach(row => {
                 content += [
@@ -356,7 +356,7 @@ app.get('/api/reports/surveys-statuses/export', authenticate, async (req, res) =
                     row.total
                 ].join(delimiter) + '\n';
             });
-            
+
             res.setHeader('Content-Type', `text/${format === 'csv' ? 'csv' : 'tab-separated-values'}`);
             res.setHeader('Content-Disposition', `attachment; filename=surveys-statuses.${format === 'csv' ? 'csv' : 'txt'}`);
             res.send(content);
@@ -462,7 +462,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
         }
 
         const user = await userOperations.getById(req.user.id);
-        
+
         // Use bcrypt to compare current password
         const isValid = await comparePassword(currentPassword, user.password);
         if (!isValid) {
@@ -681,7 +681,7 @@ app.get('/api/interviews', authenticate, async (req, res) => {
 
         query += ` ORDER BY s.updated_at DESC`;
 
-        const result = role === 'admin' 
+        const result = role === 'admin'
             ? await pool.query(query)
             : await pool.query(query, [userId]);
 
@@ -764,9 +764,9 @@ app.get('/api/interviews/export', authenticate, async (req, res) => {
         // Generate CSV
         const delimiter = format === 'tab' ? '\t' : ',';
         const headers = [
-            'Interview Key', 'Identifying Questions', 'Responsible', 
-            'Updated On', 'Errors Count', 'Not Answered', 
-            'Interview Mode', 'Status', 'Received by Tablet', 
+            'Interview Key', 'Identifying Questions', 'Responsible',
+            'Updated On', 'Errors Count', 'Not Answered',
+            'Interview Mode', 'Status', 'Received by Tablet',
             'Assignment', 'Questionnaire'
         ].join(delimiter);
 
@@ -799,6 +799,57 @@ app.get('/api/interviews/export', authenticate, async (req, res) => {
 });
 
 // ==================== USER MANAGEMENT ====================
+
+// Get current user profile
+app.get('/api/users/profile', authenticate, async (req, res) => {
+    try {
+        const user = await userOperations.getByUsername(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role
+        });
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// Update current user profile
+app.put('/api/users/profile', authenticate, async (req, res) => {
+    try {
+        const { fullName, email, phone } = req.body;
+        const userId = req.user.userId;
+
+        const updates = {};
+        if (fullName) updates.full_name = fullName;
+        if (email) updates.email = email;
+        if (phone) updates.phone = phone;
+
+        const updated = await userOperations.update(userId, updates);
+
+        res.json({
+            success: true,
+            user: {
+                id: updated.id,
+                username: updated.username,
+                full_name: updated.full_name,
+                email: updated.email,
+                phone: updated.phone
+            }
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
 
 // Get all users (admin/supervisor only)
 app.get('/api/users', authenticate, authorize('admin', 'supervisor'), async (req, res) => {
@@ -863,7 +914,7 @@ app.put('/api/users/:id', authenticate, authorize('admin'), userValidation.updat
         if (req.body.phone) updates.phone = req.body.phone;
         if (req.body.role) updates.role = req.body.role;
         if (req.body.active !== undefined) updates.active = req.body.active;
-        
+
         // Hash password with bcrypt if being updated
         if (req.body.password) {
             updates.password = await hashPassword(req.body.password);
@@ -907,6 +958,7 @@ app.delete('/api/users/:id', authenticate, authorize('admin'), async (req, res) 
 
 // ==================== EXPORT ENDPOINTS ====================
 
+// Export surveys CSV
 app.get('/api/export/csv', authenticate, async (req, res) => {
     try {
         const surveys = await surveyOperations.exportToCSV();
@@ -947,6 +999,210 @@ app.get('/api/export/csv', authenticate, async (req, res) => {
     }
 });
 
+// Export surveys JSON
+app.get('/api/export/json', authenticate, async (req, res) => {
+    try {
+        const surveys = await surveyOperations.exportToCSV();
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="surveys_${Date.now()}.json"`);
+        res.json(surveys);
+    } catch (error) {
+        console.error('Export JSON error:', error);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// Export users
+app.get('/api/export/users', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const users = await userOperations.getAll();
+
+        const csvRows = [['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Active', 'Created At']];
+
+        users.forEach(u => {
+            csvRows.push([
+                u.id, u.username, u.full_name || '', u.email || '', u.phone || '',
+                u.role, u.active ? 'Yes' : 'No', u.created_at
+            ]);
+        });
+
+        const csv = csvRows.map(row =>
+            row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="users_${Date.now()}.csv"`);
+        res.send(csv);
+    } catch (error) {
+        console.error('Export users error:', error);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// Export forms
+app.get('/api/export/forms', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM form_templates ORDER BY created_at DESC');
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="forms_${Date.now()}.json"`);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Export forms error:', error);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// Export GeoJSON
+app.get('/api/export/geojson', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, farmer_name, village, island, latitude, longitude, 
+                   farm_size, crops, created_at
+            FROM surveys 
+            WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        `);
+
+        const features = result.rows.map(row => ({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [parseFloat(row.longitude), parseFloat(row.latitude)]
+            },
+            properties: {
+                id: row.id,
+                farmer_name: row.farmer_name,
+                village: row.village,
+                island: row.island,
+                farm_size: row.farm_size,
+                crops: row.crops,
+                created_at: row.created_at
+            }
+        }));
+
+        const geojson = {
+            type: 'FeatureCollection',
+            features: features
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="surveys_locations_${Date.now()}.geojson"`);
+        res.json(geojson);
+    } catch (error) {
+        console.error('Export GeoJSON error:', error);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// ==================== SETTINGS ENDPOINTS ====================
+
+// Get all settings
+app.get('/api/settings', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM settings WHERE id = 1');
+        const settings = result.rows[0] || {
+            global_note: { message: '', enabled: false },
+            web_interview: { enabled: false, sessionTimeout: 30, allowAnonymous: false, requireEmail: false }
+        };
+
+        res.json({
+            globalNote: settings.global_note,
+            webInterview: settings.web_interview
+        });
+    } catch (error) {
+        console.error('Get settings error:', error);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// Save global note
+app.post('/api/settings/global-note', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { message, enabled } = req.body;
+
+        await pool.query(`
+            INSERT INTO settings (id, global_note, updated_at)
+            VALUES (1, $1, NOW())
+            ON CONFLICT (id) 
+            DO UPDATE SET global_note = $1, updated_at = NOW()
+        `, [JSON.stringify({ message, enabled })]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Save global note error:', error);
+        res.status(500).json({ error: 'Failed to save global note' });
+    }
+});
+
+// Save web interview settings
+app.post('/api/settings/web-interview', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const { enabled, sessionTimeout, allowAnonymous, requireEmail } = req.body;
+
+        const webInterview = {
+            enabled,
+            url: process.env.BASE_URL + '/web-interview',
+            sessionTimeout,
+            allowAnonymous,
+            requireEmail
+        };
+
+        await pool.query(`
+            INSERT INTO settings (id, web_interview, updated_at)
+            VALUES (1, $1, NOW())
+            ON CONFLICT (id)
+            DO UPDATE SET web_interview = $1, updated_at = NOW()
+        `, [JSON.stringify(webInterview)]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Save web interview settings error:', error);
+        res.status(500).json({ error: 'Failed to save settings' });
+    }
+});
+
+// Upload company logo
+app.post('/api/settings/company-logo', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        // TODO: Implement file upload with multer
+        res.json({ success: true, message: 'Logo upload endpoint ready for implementation' });
+    } catch (error) {
+        console.error('Upload logo error:', error);
+        res.status(500).json({ error: 'Failed to upload logo' });
+    }
+});
+
+// Remove company logo
+app.delete('/api/settings/company-logo', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        // TODO: Implement logo removal
+        res.json({ success: true, message: 'Logo removed' });
+    } catch (error) {
+        console.error('Remove logo error:', error);
+        res.status(500).json({ error: 'Failed to remove logo' });
+    }
+});
+
+// Get devices
+app.get('/api/devices', authenticate, async (req, res) => {
+    try {
+        // TODO: Implement device tracking
+        res.json([
+            {
+                icon: '🖥️',
+                name: 'Web Browser - Desktop',
+                lastSeen: 'Today at ' + new Date().toLocaleTimeString(),
+                deviceId: 'WEB-' + req.user.userId,
+                online: true
+            }
+        ]);
+    } catch (error) {
+        console.error('Get devices error:', error);
+        res.status(500).json({ error: 'Failed to fetch devices' });
+    }
+});
+
 // ==================== SYNC LOGS ====================
 
 app.get('/api/sync-logs', authenticate, authorize('admin', 'supervisor'), async (req, res) => {
@@ -972,7 +1228,7 @@ async function startServer() {
         if (users.length === 0) {
             const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Admin@123456';
             const hashedPassword = await hashPassword(defaultPassword);
-            
+
             await userOperations.create({
                 id: 'admin-001',
                 username: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
@@ -1020,11 +1276,24 @@ async function startServer() {
             console.log('     GET    /api/dashboard');
             console.log('   User Management:');
             console.log('     GET    /api/users');
+            console.log('     GET    /api/users/profile');
+            console.log('     PUT    /api/users/profile');
             console.log('     POST   /api/users');
             console.log('     PUT    /api/users/:id');
             console.log('     DELETE /api/users/:id');
+            console.log('   Settings:');
+            console.log('     GET    /api/settings');
+            console.log('     POST   /api/settings/global-note');
+            console.log('     POST   /api/settings/web-interview');
+            console.log('     POST   /api/settings/company-logo');
+            console.log('     DELETE /api/settings/company-logo');
+            console.log('     GET    /api/devices');
             console.log('   Export & Logs:');
             console.log('     GET    /api/export/csv');
+            console.log('     GET    /api/export/json');
+            console.log('     GET    /api/export/users');
+            console.log('     GET    /api/export/forms');
+            console.log('     GET    /api/export/geojson');
             console.log('     GET    /api/sync-logs');
             console.log('   System:');
             console.log('     GET    /api/health');

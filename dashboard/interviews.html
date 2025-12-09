@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -146,7 +147,7 @@
             width: 100%;
             border-collapse: collapse;
             background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .interviews-table thead {
@@ -376,12 +377,24 @@
         }
 
         @keyframes loading {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
+
+            0%,
+            20% {
+                content: '.';
+            }
+
+            40% {
+                content: '..';
+            }
+
+            60%,
+            100% {
+                content: '...';
+            }
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar">
@@ -396,6 +409,7 @@
             <li><a href="surveys.html">Surveys</a></li>
             <li><a href="users.html">Users</a></li>
             <li><a href="../designer/index.html">Form Designer</a></li>
+            <li><a href="settings.html">Settings</a></li>
         </ul>
         <div class="nav-user">
             <span id="userName">Admin</span>
@@ -472,11 +486,8 @@
                     <span class="interviews-count">(<span id="interviewCount">0</span>)</span>
                 </div>
                 <div class="interviews-actions">
-                    <input type="text" 
-                           id="searchInput" 
-                           class="interviews-search" 
-                           placeholder="Search..."
-                           onkeyup="searchInterviews()">
+                    <input type="text" id="searchInput" class="interviews-search" placeholder="Search..."
+                        onkeyup="searchInterviews()">
                     <button class="btn-export" onclick="exportInterviews()">
                         📊 Export
                     </button>
@@ -491,7 +502,8 @@
             <!-- Pagination -->
             <div class="pagination" id="pagination" style="display: none;">
                 <div class="pagination-info">
-                    Showing <span id="pageStart">0</span> to <span id="pageEnd">0</span> of <span id="totalItems">0</span> entries
+                    Showing <span id="pageStart">0</span> to <span id="pageEnd">0</span> of <span
+                        id="totalItems">0</span> entries
                 </div>
                 <div class="pagination-controls">
                     <button onclick="goToPage(1)">First</button>
@@ -506,4 +518,5 @@
 
     <script src="interviews.js"></script>
 </body>
+
 </html>
